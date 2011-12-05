@@ -1,6 +1,5 @@
 #include "board.h"
 #include "pm.h"
-#include "delay.h"
 #include "gpio.h"
 #include "os_core.h"
 
