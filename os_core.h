@@ -10,7 +10,8 @@
  * system (version \ref OS_VERSION).
  * - Preemptive and/or cooperative multi-tasking
  * - Task priority
- * - Hooks
+ * - Several hook points
+ * - Doxygen documented
  */
 
 /*! \brief Current version of the operating system.

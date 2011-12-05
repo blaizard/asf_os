@@ -6,28 +6,32 @@
 		OS
 		</info>
 
+		<!-- OS port //-->
+                <build type="module-config" subtype="required-header-file" value="os_port.h"/>
+		<build type="c-source" value="port/avr32_uc3/exception.s82" toolchain="iarew32"/>
+                <build type="c-source" value="port/avr32_uc3/exception.S" toolchain="avr32gcc"/>
+		<build type="c-source" value="port/avr32_uc3/uc3_port.c"/>
+                <build type="header-file" value="port/avr32_uc3/os_port.h"/>
+                <build type="include-path" value="port/avr32_uc3/"/>
+
+                <!-- OS configuration //-->
                 <build type="module-config" subtype="required-header-file" value="conf_os.h"/>
-		<build type="c-source" value="main.c"/>
-		<build type="c-source" value="port/exception.s82" toolchain="iarew32"/>
-                <build type="c-source" value="port/exception.S" toolchain="avr32gcc"/>
-		<build type="c-source" value="port/uc3_port.c"/>
+		<build type="header-file" value="conf_os.h"/>
+
+                <!-- OS source code //-->
 		<build type="c-source" value="os_core.c"/>
                 <build type="header-file" value="os_core.h"/>
 		<build type="c-source" value="os_debug.c"/>
                 <build type="header-file" value="os_debug.h"/>
-                <build type="header-file" value="port/os_port.h"/>
                 <build type="include-path" value="."/>
-		<build type="include-path" value="port/"/>
 
-                <build type="header-file" value="conf_os.h"/>
-
+                <build type="c-source" value="main.c"/>
 		<require idref="common.utils.interrupt"/>
 		<require idref="avr32.drivers.cpu.cycle_counter"/>
 		<require idref="avr32.drivers.gpio"/>
 		<require idref="avr32.drivers.pm"/>
 		<require idref="avr32.drivers.rtc"/>
                 <require idref="avr32.drivers.tc"/>
-		<require idref="avr32.services.basic.delay"/>
 		<require idref="avr32.utils.print_funcs"/>
 	</module>
 </asf>
