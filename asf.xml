@@ -8,7 +8,6 @@
 
 		<!-- OS port //-->
                 <build type="module-config" subtype="required-header-file" value="os_port.h"/>
-		<build type="c-source" value="port/avr32_uc3/exception.s82" toolchain="iarew32"/>
                 <build type="c-source" value="port/avr32_uc3/exception.S" toolchain="avr32gcc"/>
 		<build type="c-source" value="port/avr32_uc3/uc3_port.c"/>
                 <build type="header-file" value="port/avr32_uc3/os_port.h"/>
