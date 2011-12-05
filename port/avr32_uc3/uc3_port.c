@@ -129,7 +129,7 @@ __interrupt static void os_task_switch_context_int_handler(void);
 #endif
 
 #if __GNUC__
-	__attribute__((__naked__))
+__attribute__((__naked__))
 #elif __ICCAVR32__
 	#pragma shadow_registers = full
 #endif
@@ -171,13 +171,15 @@ ISR(os_task_switch_context_int_handler, OS_SCHEDULER_IRQ_GROUP,
 #endif
 }
 
-void _os_task_switch_context(void);
 #if __GNUC__
-	__attribute__((__naked__))
+__attribute__((__naked__))
+void _os_task_switch_context(void);
+void _os_task_switch_context(void)
 #elif __ICCAVR32__
 	#pragma shadow_registers = full
+	#pragma exception=0x100,0
+__exception void _os_task_switch_context(void)
 #endif
-void _os_task_switch_context(void)
 {
 	extern struct os_task *os_current_task;
 

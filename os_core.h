@@ -50,6 +50,12 @@
 #ifndef CONFIG_OS_SCHEDULER_TYPE
 	#define CONFIG_OS_SCHEDULER_TYPE CONFIG_OS_SCHEDULER_COOPERATIVE
 #endif
+#if CONFIG_OS_SCHEDULER_TYPE == CONFIG_OS_SCHEDULER_COOPERATIVE && \
+		CONFIG_OS_USE_TICK_COUNTER == true
+	#error The tick counter cannot be used when only cooperative scheduler\
+			is used. CONFIG_OS_SCHEDULER_TYPE must be set to\
+			something else than CONFIG_OS_SCHEDULER_COOPERATIVE.
+#endif
 
 /*! \defgroup os_scheduler_type Scheduler Type
  * \brief Configuration values for \ref CONFIG_OS_SCHEDULER_TYPE
