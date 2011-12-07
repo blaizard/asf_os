@@ -22,6 +22,11 @@
                 <build type="header-file" value="os_core.h"/>
 		<build type="c-source" value="os_debug.c"/>
                 <build type="header-file" value="os_debug.h"/>
+		<build type="c-source" value="os_interrupt.c"/>
+                <build type="header-file" value="os_interrupt.h"/>
+		<build type="c-source" value="os_event.c"/>
+                <build type="header-file" value="os_event.h"/>
+		<build type="header-file" value="os_semaphore.h"/>
                 <build type="include-path" value="."/>
 
                 <build type="c-source" value="main.c"/>

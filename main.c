@@ -7,10 +7,14 @@
 
 struct os_task task_1, task_2, task_3, task_4;
 
+static struct os_interrupt int_1;
+
 struct task_args {
 	uint32_t delay_ms;
 	uint32_t pin;
 };
+
+void task2(void *args);
 
 void task(void *raw_args)
 {
@@ -20,14 +24,13 @@ void task(void *raw_args)
 		gpio_tgl_gpio_pin(args->pin);
 		os_task_delay(OS_MS_TO_TICK(args->delay_ms));
 		os_task_yield();
+		os_interrupt_trigger(&int_1);
 	};
 }
 
 void task2(void *args)
 {
-	while (1) {
-		os_task_yield();
-	};
+	gpio_tgl_gpio_pin(LED3_GPIO);
 }
 
 int main(void)
@@ -47,10 +50,12 @@ int main(void)
 
 	pm_switch_to_osc0(&AVR32_PM, FOSC0, OSC0_STARTUP);
 
-	os_task_add(&task_1, task, &args_1, 500, OS_TASK_DEFAULT);
-	os_task_add(&task_2, task, &args_2, 500, OS_TASK_DEFAULT);
-	os_task_add(&task_3, task, &args_3, 500, OS_TASK_DEFAULT);
-	os_task_add(&task_4, task2, &task_1, 500, OS_TASK_DEFAULT);
+	os_interrupt_setup(&int_1, task2, NULL);
+
+	os_task_setup(&task_1, task, &args_1, 500, OS_TASK_DEFAULT);
+	os_task_setup(&task_2, task, &args_2, 500, OS_TASK_DEFAULT);
+	os_task_setup(&task_3, task, &args_3, 500, OS_TASK_DEFAULT);
+	//os_task_setup(&task_4, task2, &task_1, 500, OS_TASK_DEFAULT);
 
 	os_start(CPU_HZ);
 }

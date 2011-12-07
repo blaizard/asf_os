@@ -6,5 +6,6 @@
 #define CONFIG_OS_DEBUG true
 #define CONFIG_OS_USE_TICK_COUNTER true
 #define CONFIG_OS_USE_16BIT_TICKS false
+#define CONFIG_OS_USE_SW_INTERRUPTS true
 
 #endif // __CONF_OS_H__

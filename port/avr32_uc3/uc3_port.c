@@ -5,8 +5,8 @@
  * \param value The 32-bit value to be pushed
  */
 #define PUSH(task, value) { \
-	(task)->core.sp = (uint32_t *) (task)->core.sp - 1; \
-	*((uint32_t *) (task)->core.sp) = (uint32_t) (value); \
+	(task)->sp = (uint32_t *) (task)->sp - 1; \
+	*((uint32_t *) (task)->sp) = (uint32_t) (value); \
 }
 
 /* Declaration of the interrupt handler function
@@ -136,7 +136,7 @@ __attribute__((__naked__))
 ISR(os_task_switch_context_int_handler, OS_SCHEDULER_IRQ_GROUP,
 		CONFIG_OS_SCHEDULER_IRQ_PRIORITY)
 {
-	extern struct os_task *os_current_task;
+	extern struct os_task_minimal *os_current_task;
 
 	__asm__ __volatile__ (
 		// Save context
@@ -148,15 +148,13 @@ ISR(os_task_switch_context_int_handler, OS_SCHEDULER_IRQ_GROUP,
 		"st.w r1[0], sp\n\t"
 	);
 
-	os_task_switch_context_int_handler_hook();
 	// Clear the interrupt flag
 	os_task_scheduler_clear_int();
+	os_task_switch_context_int_handler_hook();
 
 	__asm__ __volatile__ (
 		// Update the stack pointer
-		"mov r0, os_current_task\n\t"
-		"ld.w r1, r0[0]\n\t"
-		"ld.w sp, r1\n\t"
+		"ld.w sp, r12\n\t"
 
 		// Restore context
 		"popm r0-r7\n\t"
@@ -181,7 +179,7 @@ void _os_task_switch_context(void)
 __exception void _os_task_switch_context(void)
 #endif
 {
-	extern struct os_task *os_current_task;
+	extern struct os_task_minimal *os_current_task;
 
 	__asm__ __volatile__ (
 		// Save context
@@ -201,9 +199,7 @@ __exception void _os_task_switch_context(void)
 
 	__asm__ __volatile__ (
 		// Update the stack pointer
-		"mov r0, os_current_task\n\t"
-		"ld.w r1, r0[0]\n\t"
-		"ld.w sp, r1\n\t"
+		"ld.w sp, r12\n\t"
 
 		// Restore context
 		"popm r0-r7\n\t" // r0-r7
@@ -225,7 +221,7 @@ __exception void _os_task_switch_context(void)
 #endif
 }
 
-bool os_task_context_load(struct os_task *task, task_ptr_t task_ptr, void *args)
+bool os_task_context_load(struct os_task_minimal *task, task_ptr_t task_ptr, void *args)
 {
 	PUSH(task, 0); // R8
 	PUSH(task, 0); // R9

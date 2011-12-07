@@ -7,11 +7,21 @@
 
 /*! \defgroup group_os Operating System
  * \brief This page contains all the documentation related to this operating
- * system (version \ref OS_VERSION).
- * - Preemptive and/or cooperative multi-tasking
+ * system (\ref OS_VERSION).
+ * - Preemptive and/or cooperative round-robin multi-tasking
  * - Task priority
  * - Several hook points
  * - Doxygen documented
+ *
+ * All the actives tasks are stored in a chain list.
+ * The current task is the task pointed by \ref os_current_task.
+ * At the begining, when the task scheduler is not running the current process
+ * is not a task so its information need to be storted in a specific context.
+ * This context is \ref os_app. Therefore, at the begining the active task chain
+ * list looks like this:
+ * os_current_task -> os_app -> task1 -> task2 -> task1 -> task2 -> ...
+ * During normal execution, os_app is not part of the chain list anymore:
+ * os_current_task -> task1 -> task2 -> task1 -> task2 -> ...
  */
 
 /*! \brief Current version of the operating system.
@@ -109,6 +119,20 @@
 	#define CONFIG_OS_USE_CUSTOM_MALLOC false
 #endif
 
+/*! \def CONFIG_OS_USE_SW_INTERRUPTS
+ * \brief Use this option to enable software interrupts.
+ */
+#ifndef CONFIG_OS_USE_SW_INTERRUPTS
+	#define CONFIG_OS_USE_SW_INTERRUPTS true
+#endif
+
+/*! \def CONFIG_OS_TASK_DEFAULT_PRIORITY
+ * \brief Default priority assgined to a task
+ */
+#ifndef CONFIG_OS_TASK_DEFAULT_PRIORITY
+	#define CONFIG_OS_TASK_DEFAULT_PRIORITY OS_PRIORITY_1
+#endif
+
 /*!
  * \}
  */
@@ -150,21 +174,18 @@
  * \}
  */
 
-/* Include OS modules */
-#include "os_debug.h"
-
 #if CONFIG_OS_USE_PRIORITY == true
 /*! Priority of the task.
  * The lower get the most priority
  */
-enum os_task_priority {
-	OS_TASK_PRIORITY_1 = 0,
-	OS_TASK_PRIORITY_2 = 1,
-	OS_TASK_PRIORITY_3 = 2,
-	OS_TASK_PRIORITY_4 = 3,
-	OS_TASK_PRIORITY_5 = 4,
-	OS_TASK_PRIORITY_10 = 9,
-	OS_TASK_PRIORITY_20 = 19
+enum os_priority {
+	OS_PRIORITY_1 = 0,
+	OS_PRIORITY_2 = 1,
+	OS_PRIORITY_3 = 2,
+	OS_PRIORITY_4 = 3,
+	OS_PRIORITY_5 = 4,
+	OS_PRIORITY_10 = 9,
+	OS_PRIORITY_20 = 19
 };
 #endif
 
@@ -201,14 +222,14 @@ struct os_task_minimal {
 	/*! Pointer of the next task in the list.
 	 * Active tasks are registered within a chain list.
 	 */
-	struct os_task *next;
+	struct os_task_minimal *next;
 #if CONFIG_OS_USE_PRIORITY == true
-	/*! Priority of the stack. The priority is the ratio
+	/*! Priority of the task.
 	 */
-	enum os_task_priority priority;
+	enum os_priority priority;
 	/*! Use to manage the task priorities
 	 */
-	enum os_task_priority priority_counter;
+	enum os_priority priority_counter;
 #endif
 };
 
@@ -231,25 +252,20 @@ struct os_task {
  */
 typedef void (*task_ptr_t)(void *args);
 
-/*! This function will define the rules to change the task.
+/* Include OS modules */
+#include "os_debug.h"
+#include "os_interrupt.h"
+#include "os_event.h"
+#include "os_semaphore.h"
+
+/*! \brief This function will define the rules to change the task.
  * \return The new task context
  */
-#if CONFIG_OS_USE_PRIORITY == true
-static inline void os_task_scheduler(void) {
-	extern void os_task_scheduler_priority(void);
-	os_task_scheduler_priority();
-}
-#else
-static inline void os_task_scheduler(void) {
-	extern struct os_task *os_current_task;
-	os_current_task = os_current_task->core.next;
-}
-#endif
+struct os_task_minimal *os_task_scheduler(void);
 
-/*! \defgroup os_public_api Public API
+/*! \defgroup group_os_public_api Public API
  * \brief Public application interface.
  * \ingroup group_os
- * \{
  */
 
 /*! \brief Allocate memory for the stack
@@ -264,8 +280,9 @@ static inline void os_task_scheduler(void) {
  * static OS_MALLOC_STACK(my_stack, 1024);
  * struct os_task my_task;
  * my_task.stack = my_stack;
- * os_task_add(&my_task, my_func, NULL, 0, OS_TASK_USE_CUSTOM_STACK);
+ * os_task_setup(&my_task, my_func, NULL, 0, OS_TASK_USE_CUSTOM_STACK);
  * \endcode
+ * \ingroup group_os_public_api
  * \param stack_symbol The symbol name used to refer to this stack
  * \param stack_size The size of the stack in bytes
  */
@@ -273,6 +290,7 @@ static inline void os_task_scheduler(void) {
 		uint8_t (stack_symbol)[(stack_size)]
 
 /*! \brief Convert a delay in milliseconds to a number of ticks.
+ * \ingroup group_os_public_api
  * \param time_ms The time (in ms) to be converted
  * \return The number of ticks
  */
@@ -280,13 +298,22 @@ static inline void os_task_scheduler(void) {
 		(((time_ms) * CONFIG_OS_TICK_HZ) / 1000)
 
 /*! \brief Convert a delay in seconds to a number of ticks.
+ * \ingroup group_os_public_api
  * \param time_s The time (in s) to be converted
  * \return The number of ticks
  */
 #define OS_S_TO_TICK(time_s) \
 		((time_s) * CONFIG_OS_TICK_HZ)
 
+/*! \name Tasks
+ *
+ * Set of functions to manage a task
+ *
+ * \{
+ */
+
 /*! \brief Create and add a new task.
+ * \ingroup group_os_public_api
  * \param task A pointer on an empty structure which will contain the context of
  * the current task.
  * \param task_ptr Entry point of the task to be run.
@@ -295,25 +322,29 @@ static inline void os_task_scheduler(void) {
  * \param options Specific options for the task (see \ref os_task_option)
  * \return true if the task has been correctly registered, false otherwise.
  */
-bool os_task_add(struct os_task *task, task_ptr_t task_ptr, void *args,
+bool os_task_setup(struct os_task *task, task_ptr_t task_ptr, void *args,
 		int stack_size, enum os_task_option options);
 
 /*! \brief Delete a task
+ * \ingroup group_os_public_api
  * \param task The task to be deleted
  */
 void os_task_delete(struct os_task *task);
 
 /*! \brief Enable the execution a task
+ * \ingroup group_os_public_api
  * \param task The task to be enabled
  */
 void os_task_enable(struct os_task *task);
 
 /*! \brief Disable the execution of a task
+ * \ingroup group_os_public_api
  * \param task The task to be disabled
  */
 void os_task_disable(struct os_task *task);
 
 /*! \brief Check wether a task is enabled or not
+ * \ingroup group_os_public_api
  * \param task The task to be checked
  * \return true if enabled, false otherwise
  */
@@ -321,24 +352,64 @@ bool os_task_is_enabled(struct os_task *task);
 
 /*! \brief Call the scheduler to switch to a new task
  * This function is usefull for cooperative task swiching
+ * \ingroup group_os_public_api
  */
 void os_task_yield(void);
 
 #if CONFIG_OS_USE_TICK_COUNTER == true
 /*! \brief Block the execution of a task until a number of ticks have passed.
+ * \ingroup group_os_public_api
  * \ref CONFIG_OS_TICK_HZ can be used to estimate a time delay.
  * \param tick_nb The number of ticks to wait for
  * \pre \ref CONFIG_OS_USE_TICK_COUNTER needs to be set first.
+ * \warning This functon needs the preemptive scheduler to run. Therefore, it
+ * cannot be used inside an interrupt or any other piece of code where the
+ * tick interrupt is disabled.
  */
 void os_task_delay(os_tick_t tick_nb);
 #endif
 
-/*! Send a task to sleep.
- * The task will wake up uppon a specific event
+/*! \brief Get the current running task
+ * \ingroup group_os_public_api
+ * \return the current task. NULL if none is running.
  */
-// void os_task_sleep(struct os_task *task, struct os_event *trigger);
+struct os_task *os_task_current(void);
+
+#if CONFIG_OS_USE_PRIORITY == true
+/*! \brief Change the priority of a task
+ * \ingroup group_os_public_api
+ * \param task The task which needs some update
+ * \param priority The new priority
+ * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
+ */
+static inline void os_task_set_priority(struct os_task *task, enum os_priority priority) {
+	// Not critical so non need to use the os_enter_critical function
+	task->core.priority = priority;
+	task->core.priority_counter = priority;
+}
+/*! \brief Get the priority of a task
+ * \ingroup group_os_public_api
+ * \param task The task which priority is requested
+ * \return The task priority
+ */
+static inline enum os_priority os_task_get_priority(struct os_task *task) {
+	return task->core.priority_counter;
+}
+#endif
+
+/*!
+ * \}
+ */
+
+/*! \name Kernel Control
+ *
+ * Control the core of the operating system
+ *
+ * \{
+ */
 
 /*! \brief Start the task scheduling process
+ * \ingroup group_os_public_api
  * \param ref_hz The frequency which runs the peripheral to generate
  * the ticks. Usually this frequency is equal to the CPU frequency.
  */
@@ -358,32 +429,6 @@ static inline void os_start(uint32_t ref_hz) {
 	}
 }
 
-/*! \brief Get the current running task
- * \return the current task. NULL if none is running.
- */
-struct os_task *os_task_current(void);
-
-#if CONFIG_OS_USE_PRIORITY == true
-/*! \brief Change the priority of a task
- * \param task The task which needs some update
- * \param priority The new priority
- * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
- */
-static inline void os_task_set_priority(struct os_task *task, enum os_task_priority priority) {
-	os_enter_critical();
-	task->core.priority = priority;
-	task->core.priority_counter = priority;
-	os_leave_critical();
-}
-/*! \brief Get the priority of a task
- * \param task The task which priority is requested
- * \return The task priority
- */
-static inline enum os_task_priority os_task_get_priority(struct os_task *task) {
-	return task->core.priority_counter;
-}
-#endif
-
 /*!
  * \}
  */
@@ -397,15 +442,13 @@ static inline enum os_task_priority os_task_get_priority(struct os_task *task) {
 
 /*!
  * \fn void os_enter_critical(void)
- * \brief Enter a critical zone which must not be interrupted by any other
- * tasks\n
- * This function will basically disable interrupts
+ * \brief Start of a critical code region. Preemptive context switches cannot
+ * occur when in a critical region.\n
  */
 
 /*!
  * \fn void os_leave_critical(void)
- * \brief Exit a critical zone\n
- * This function will basically enable interrupts
+ * \brief Exit a critical code region.\n
  */
 
 /*!
@@ -459,15 +502,16 @@ static inline void os_free(void *ptr) {
  * \param args Parameters to pass to the task
  * \return true in case of success, false otherwise
  */
-bool os_task_context_load(struct os_task *task, task_ptr_t task_ptr,
+bool os_task_context_load(struct os_task_minimal *task, task_ptr_t task_ptr,
 		void *args);
 
 /*!
  * \brief This function must be called inside the
  * \ref os_task_switch_context_int_handler function in order to switch task
  * context.
+ * \return The context of the new task
  */
-static inline void os_task_switch_context_int_handler_hook(void) {
+static inline struct os_task_minimal *os_task_switch_context_int_handler_hook(void) {
 #if CONFIG_OS_USE_TICK_COUNTER == true
 	extern volatile os_tick_t tick_counter;
 	// Update the tick counter
@@ -480,18 +524,56 @@ static inline void os_task_switch_context_int_handler_hook(void) {
 	HOOK_OS_TICK();
 #endif
 	// Task switch context
-	os_task_scheduler();
+	return os_task_scheduler();
 }
 
 /*!
  * \brief This function must be called inside the
  * \ref os_task_switch_context function in order to switch task context.
+ * \return The context of the new task
  */
-static inline void os_task_switch_context_hook(void) {
+static inline struct os_task_minimal *os_task_switch_context_hook(void) {
 	// Task switch context
-	os_task_scheduler();
+	return os_task_scheduler();
 }
 
+/*!
+ * \}
+ */
+
+/*!
+ * \defgroup group_os_internal_api Internal API
+ * \ingroup group_os
+ * \brief Internal API. These functions should not be used by the user.
+ * \{
+ */
+/*! \brief Test if the current running task is the application task.
+ * \return true if the task is the application task, false otherwise.
+ */
+static inline bool __os_task_is_application(void) {
+	extern struct os_task_minimal os_app;
+	extern struct os_task_minimal *os_current_task;
+	return (os_current_task == &os_app);
+}
+/*! \brief Get the application task
+ * \return the application task
+ */
+static inline struct os_task_minimal *__os_task_get_application(void) {
+	extern struct os_task_minimal os_app;
+	return &os_app;
+}
+/*! \copydoc os_task_enable
+ * This function will push the task at the end of the chain list
+ * \warning This function does not check if the task is already added to the
+ * list and should be used inside a critical area.
+ */
+void __os_task_enable(struct os_task_minimal *task);
+/*! \copydoc os_task_disable
+ * \warning This function does not check if the task is already disabled and
+ * should be used inside a critical area. It also does not stop after the
+ * execution of this function.
+ */
+void __os_task_disable(struct os_task_minimal *task);
 /*!
  * \}
  */
