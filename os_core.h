@@ -10,7 +10,8 @@
  * system (\ref OS_VERSION).
  * - Preemptive and/or cooperative round-robin multi-tasking
  * - Task priority
- * - Several hook points
+ * - Hook points
+ * - Software interrupt with priority
  * - Doxygen documented
  *
  * All the actives tasks are stored in a chain list.
@@ -117,13 +118,6 @@
  */
 #ifndef CONFIG_OS_USE_CUSTOM_MALLOC
 	#define CONFIG_OS_USE_CUSTOM_MALLOC false
-#endif
-
-/*! \def CONFIG_OS_USE_SW_INTERRUPTS
- * \brief Use this option to enable software interrupts.
- */
-#ifndef CONFIG_OS_USE_SW_INTERRUPTS
-	#define CONFIG_OS_USE_SW_INTERRUPTS true
 #endif
 
 /*! \def CONFIG_OS_TASK_DEFAULT_PRIORITY
@@ -251,12 +245,6 @@ struct os_task {
  * \param args Arguments passed to the task in a form of an empty pointer
  */
 typedef void (*task_ptr_t)(void *args);
-
-/* Include OS modules */
-#include "os_debug.h"
-#include "os_interrupt.h"
-#include "os_event.h"
-#include "os_semaphore.h"
 
 /*! \brief This function will define the rules to change the task.
  * \return The new task context
@@ -401,6 +389,12 @@ static inline enum os_priority os_task_get_priority(struct os_task *task) {
  * \}
  */
 
+/* Include OS modules */
+#include "os_debug.h"
+#include "os_interrupt.h"
+#include "os_event.h"
+#include "os_semaphore.h"
+
 /*! \name Kernel Control
  *
  * Control the core of the operating system
@@ -423,8 +417,14 @@ static inline void os_start(uint32_t ref_hz) {
 	os_task_yield();
 	// Idle loop
 	while (true) {
+#if CONFIG_OS_USE_EVENTS == true
+		if (!os_event_scheduler()) {
+#endif
 #if HOOK_OS_IDLE
 		HOOK_OS_IDLE();
+#endif
+#if CONFIG_OS_USE_EVENTS == true
+		}
 #endif
 	}
 }
@@ -441,13 +441,13 @@ static inline void os_start(uint32_t ref_hz) {
  */
 
 /*!
- * \fn void os_enter_critical(void)
+ * \fn os_enter_critical
  * \brief Start of a critical code region. Preemptive context switches cannot
  * occur when in a critical region.\n
  */
 
 /*!
- * \fn void os_leave_critical(void)
+ * \fn os_leave_critical
  * \brief Exit a critical code region.\n
  */
 
@@ -460,13 +460,18 @@ static inline void os_start(uint32_t ref_hz) {
 void os_setup_scheduler(uint32_t ref_hz);
 
 /*!
- * \fn void os_task_switch_context(void)
+ * \fn os_task_switch_context(bypass_context_saving)
  * \brief Context switch for a task.\n
- * Function used to schedule and switch between the tasks.
+ * Function used to schedule and switch between the tasks.\n
+ * This function will handle the return from a softwre interrupt. Therefore it
+ * can be optimized to bypass the saving context part IF an interrupt is
+ * running (if \ref os_interrupt_flag is true).
+ * \param bypass_context_saving If true, this function needs to bypass the
+ * context saving.
  */
 
 /*!
- * \fn void os_task_switch_context_int_handler(void)
+ * \fn os_task_switch_context_int_handler
  * \brief Context switch for a task.\n
  * Interrupt handler which is used to schedule and switch between the tasks.
  */
@@ -533,6 +538,10 @@ static inline struct os_task_minimal *os_task_switch_context_int_handler_hook(vo
  * \return The context of the new task
  */
 static inline struct os_task_minimal *os_task_switch_context_hook(void) {
+#ifdef OS_SCHEDULER_INTERRUPT_PRE_HOOK
+	// Clear the software interrupt if needed
+	OS_SCHEDULER_INTERRUPT_PRE_HOOK();
+#endif
 	// Task switch context
 	return os_task_scheduler();
 }

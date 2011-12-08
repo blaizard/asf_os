@@ -25,7 +25,7 @@ void task(void *raw_args)
 		os_task_delay(OS_MS_TO_TICK(args->delay_ms));
 		os_task_yield();
 		os_interrupt_trigger(&int_1);
-	};
+	}
 }
 
 void task2(void *args)

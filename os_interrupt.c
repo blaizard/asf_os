@@ -14,10 +14,8 @@ void __os_interrupt_handler(void *args)
 	__os_task_disable((struct os_task_minimal *) interrupt);
 	// Execute the interrupt handler
 	interrupt->task_ptr(interrupt->args);
-	// Re-enable scheduler interrupts
-	os_leave_critical();
 	// Manually call the scheduler
-	os_task_yield();
+	os_task_switch_context(true);
 }
 
 void os_interrupt_setup(struct os_interrupt *interrupt, task_ptr_t task_ptr,

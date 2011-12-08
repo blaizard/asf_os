@@ -55,8 +55,11 @@ static inline void os_leave_critical(void) {
 	cpu_irq_enable();
 };
 
-static inline void os_task_switch_context(void) {
-	__asm__ __volatile__ ("scall\n\t");
+#define os_task_switch_context(bypass_context_saving) { \
+	__asm__ __volatile__ ( \
+		"mov r8, "ASTRINGZ(bypass_context_saving)"\n\t" \
+		"scall\n\t" \
+	); \
 }
 
 #endif // __OS_PORT_H__

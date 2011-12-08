@@ -4,11 +4,8 @@
 /*! Internal hooks
  * \{
  */
-#ifndef OS_SCHEDULER_PRE_HOOK
-	#define OS_SCHEDULER_PRE_HOOK()
-#endif
-#ifndef OS_SCHEDULER_POST_HOOK
-	#define OS_SCHEDULER_POST_HOOK()
+#ifndef OS_SCHEDULER_INTERRUPT_POST_HOOK
+	#define OS_SCHEDULER_INTERRUPT_POST_HOOK()
 #endif
 /*!
  * \}
@@ -29,14 +26,13 @@ volatile os_tick_t tick_counter = 0;
 #if CONFIG_OS_USE_PRIORITY == true
 struct os_task_minimal *os_task_scheduler(void)
 {
-	OS_SCHEDULER_PRE_HOOK();
 	do {
 		// Get the next task
 		os_current_task = os_current_task->next;
 		// Check wether its priority counter is null
 		if (!os_current_task->priority_counter) {
 			os_current_task->priority_counter = os_current_task->priority;
-			OS_SCHEDULER_POST_HOOK();
+			OS_SCHEDULER_INTERRUPT_POST_HOOK();
 			return os_current_task;
 		}
 		// Decrease the priority counter
@@ -46,9 +42,8 @@ struct os_task_minimal *os_task_scheduler(void)
 #else
 struct os_task_minimal *os_task_scheduler(void)
 {
-	OS_SCHEDULER_PRE_HOOK();
 	os_current_task = os_current_task->next;
-	OS_SCHEDULER_POST_HOOK();
+	OS_SCHEDULER_INTERRUPT_POST_HOOK();
 	return os_current_task;
 }
 #endif
@@ -193,13 +188,13 @@ void os_task_disable(struct os_task *task)
 	if (os_task_is_enabled(task)) {
 		__os_task_disable(&task->core);
 	}
-	os_task_switch_context();
+	os_task_switch_context(false);
 	os_leave_critical();
 }
 
 void os_task_yield(void)
 {
 	os_enter_critical();
-	os_task_switch_context();
+	os_task_switch_context(false);
 	os_leave_critical();
 }

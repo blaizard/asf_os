@@ -15,13 +15,28 @@ struct os_interrupt {
 	void *args;
 };
 
+/*! \ingroup group_os_config
+ *
+ * \{
+ */
+
+/*! \def CONFIG_OS_USE_SW_INTERRUPTS
+ * \brief Use this option to enable software interrupts.
+ */
+#ifndef CONFIG_OS_USE_SW_INTERRUPTS
+	#define CONFIG_OS_USE_SW_INTERRUPTS false
+#endif
+
 /*! \def CONFIG_OS_INTERRUPT_DEFAULT_PRIORITY
  * \brief Default priority assgined to an interrupt
- * \ingroup group_os_config
  */
 #ifndef CONFIG_OS_INTERRUPT_DEFAULT_PRIORITY
 	#define CONFIG_OS_INTERRUPT_DEFAULT_PRIORITY OS_PRIORITY_1
 #endif
+
+/*!
+ * \}
+ */
 
 /*! \name Software Interrupts
  *
@@ -54,30 +69,26 @@ void os_interrupt_setup(struct os_interrupt *interrupt, task_ptr_t task_ptr,
  * \pre The interrupt must be previously setup with \ref os_interrupt_setup
  */
 static inline void os_interrupt_trigger(struct os_interrupt *interrupt) {
-	extern void os_task_enable(struct os_task *task);
 	os_task_enable((struct os_task *) interrupt);
 }
 
 #if CONFIG_OS_USE_PRIORITY == true
-/*! \brief Change the priority of an interrupt
+/*! \brief Change the priority of a software interrupt
  * \ingroup group_os_public_api
  * \param interrupt The interrupt which needs some update
  * \param priority The new priority
  * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
  */
 static inline void os_interrupt_set_priority(struct os_interrupt *interrupt, enum os_priority priority) {
-	os_enter_critical();
-	interrupt->core.priority = priority;
-	interrupt->core.priority_counter = priority;
-	os_leave_critical();
+	os_task_set_priority((struct os_task *) interrupt, priority);
 }
-/*! \brief Get the priority of an interrupt
+/*! \brief Get the priority of a software interrupt
  * \ingroup group_os_public_api
  * \param interrupt The interrupt which priority is requested
  * \return The interrupt priority
  */
 static inline enum os_priority os_interrupt_get_priority(struct os_interrupt *interrupt) {
-	return interrupt->core.priority_counter;
+	return os_task_get_priority((struct os_task *) interrupt);
 }
 #endif
 
@@ -110,16 +121,17 @@ static inline bool __os_task_is_interrupt(void) {
  */
 
 #if CONFIG_OS_USE_SW_INTERRUPTS == true
-	#define OS_SCHEDULER_PRE_HOOK() \
+	#define OS_SCHEDULER_INTERRUPT_PRE_HOOK() \
 		do { \
 			extern bool os_interrupt_flag; \
+			extern struct os_task_minimal *os_current_task; \
 			if (os_interrupt_flag) { \
 				os_interrupt_flag = false; \
 				os_current_task->sp = NULL; \
 			} \
 		} while (false)
 
-	#define OS_SCHEDULER_POST_HOOK() \
+	#define OS_SCHEDULER_INTERRUPT_POST_HOOK() \
 		do { \
 			extern bool os_interrupt_flag; \
 			if (os_current_task->sp) \
