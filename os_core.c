@@ -192,7 +192,7 @@ void os_task_disable(struct os_task *task)
 	os_leave_critical();
 }
 
-void os_task_yield(void)
+void os_yield(void)
 {
 	os_enter_critical();
 	os_task_switch_context(false);

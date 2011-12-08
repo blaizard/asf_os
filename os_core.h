@@ -338,12 +338,6 @@ void os_task_disable(struct os_task *task);
  */
 bool os_task_is_enabled(struct os_task *task);
 
-/*! \brief Call the scheduler to switch to a new task
- * This function is usefull for cooperative task swiching
- * \ingroup group_os_public_api
- */
-void os_task_yield(void);
-
 #if CONFIG_OS_USE_TICK_COUNTER == true
 /*! \brief Block the execution of a task until a number of ticks have passed.
  * \ingroup group_os_public_api
@@ -402,6 +396,12 @@ static inline enum os_priority os_task_get_priority(struct os_task *task) {
  * \{
  */
 
+/*! \brief Call the scheduler to switch to a new task that is ready to run.
+ * This function is useful for cooperative task swiching
+ * \ingroup group_os_public_api
+ */
+void os_yield(void);
+
 /*! \brief Start the task scheduling process
  * \ingroup group_os_public_api
  * \param ref_hz The frequency which runs the peripheral to generate
@@ -414,7 +414,7 @@ static inline void os_start(uint32_t ref_hz) {
 	os_setup_scheduler(ref_hz);
 #endif
 	// Launch the scheduler
-	os_task_yield();
+	os_yield();
 	// Idle loop
 	while (true) {
 #if CONFIG_OS_USE_EVENTS == true

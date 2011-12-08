@@ -23,7 +23,7 @@ void task(void *raw_args)
 	while (1) {
 		gpio_tgl_gpio_pin(args->pin);
 		os_task_delay(OS_MS_TO_TICK(args->delay_ms));
-		os_task_yield();
+		os_yield();
 		os_interrupt_trigger(&int_1);
 	}
 }

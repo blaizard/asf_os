@@ -23,7 +23,7 @@ void os_semaphore_take(struct os_semaphore) {
 	os_leave_critical();
 
 	while () {
-		os_task_yield();
+		os_yield();
 	}
 }
 
