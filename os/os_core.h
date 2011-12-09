@@ -9,10 +9,13 @@
  * \brief This page contains all the documentation related to this operating
  * system (\ref OS_VERSION).
  * - Preemptive and/or cooperative round-robin multi-tasking
+ * - Very scalable
  * - Task priority
  * - Hook points
  * - Software interrupt with priority
  * - Doxygen documented
+ * - Advanced event system
+ * - Semaphores with priority inheritance
  *
  * All the actives tasks are stored in a chain list.
  * The current task is the task pointed by \ref os_current_task.
@@ -268,7 +271,7 @@ struct os_task_minimal *os_task_scheduler(void);
  * static OS_MALLOC_STACK(my_stack, 1024);
  * struct os_task my_task;
  * my_task.stack = my_stack;
- * os_task_setup(&my_task, my_func, NULL, 0, OS_TASK_USE_CUSTOM_STACK);
+ * os_task_create(&my_task, my_func, NULL, 0, OS_TASK_USE_CUSTOM_STACK);
  * \endcode
  * \ingroup group_os_public_api
  * \param stack_symbol The symbol name used to refer to this stack
@@ -302,7 +305,8 @@ struct os_task_minimal *os_task_scheduler(void);
  * \{
  */
 
-/*! \brief Create and add a new task.
+/*! \brief Create a new task. By default, the new task will be automatically
+ * added to the active task list unless specified.
  * \ingroup group_os_public_api
  * \param task A pointer on an empty structure which will contain the context of
  * the current task.
@@ -312,7 +316,7 @@ struct os_task_minimal *os_task_scheduler(void);
  * \param options Specific options for the task (see \ref os_task_option)
  * \return true if the task has been correctly registered, false otherwise.
  */
-bool os_task_setup(struct os_task *task, task_ptr_t task_ptr, void *args,
+bool os_task_create(struct os_task *task, task_ptr_t task_ptr, void *args,
 		int stack_size, enum os_task_option options);
 
 /*! \brief Delete a task

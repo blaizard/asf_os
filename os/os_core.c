@@ -66,7 +66,7 @@ void os_task_delay(os_tick_t tick_nb)
 }
 #endif
 
-bool os_task_setup(struct os_task *task, task_ptr_t task_ptr, void *args,
+bool os_task_create(struct os_task *task, task_ptr_t task_ptr, void *args,
 		int stack_size, enum os_task_option options)
 {
 #if CONFIG_OS_USE_MALLOC == true

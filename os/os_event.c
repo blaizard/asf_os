@@ -50,7 +50,12 @@ static inline void __os_event_insert_task_begining(struct os_event *event,
 }
 
 static inline void __os_event_enable(struct os_event *event) {
-	event->next = os_current_event->next;
+	if (os_current_event) {
+		event->next = os_current_event->next;
+	}
+	else {
+		event->next = NULL;
+	}
 	os_current_event = event;
 }
 

@@ -45,12 +45,16 @@ int main(void)
 		.pin = LED0_GPIO
 	};
 	struct task_args args_2 = {
-		.delay_ms = 500,
+		.delay_ms = 100,
 		.pin = LED1_GPIO
 	};
 	struct task_args args_3 = {
-		.delay_ms = 1000,
+		.delay_ms = 100,
 		.pin = LED2_GPIO
+	};
+	struct task_args args_4 = {
+		.delay_ms = 100,
+		.pin = LED3_GPIO
 	};
 
 	pm_switch_to_osc0(&AVR32_PM, FOSC0, OSC0_STARTUP);
@@ -60,10 +64,13 @@ int main(void)
 
 	os_interrupt_setup(&int_1, task2, NULL);
 
-	os_task_setup(&task_1, led_blink, &args_1, 500, OS_TASK_DEFAULT);
-	os_task_setup(&task_2, led_blink, &args_2, 500, OS_TASK_DEFAULT);
-	os_task_setup(&task_3, led_blink, &args_3, 500, OS_TASK_DEFAULT);
-	os_task_setup(&task_4, task2, NULL, 500, OS_TASK_DEFAULT);
+	os_task_create(&task_1, led_blink, &args_1, 500, OS_TASK_DEFAULT);
+	os_task_create(&task_2, led_blink, &args_2, 500, OS_TASK_DEFAULT);
+	os_task_create(&task_3, led_blink, &args_3, 500, OS_TASK_DEFAULT);
+	os_task_create(&task_4, led_blink, &args_4, 500, OS_TASK_DEFAULT);
+	//os_task_create(&task_4, task2, NULL, 500, OS_TASK_DEFAULT);
+
+	//os_task_set_priority(&task_2, OS_PRIORITY_3);
 
 	os_start(CPU_HZ);
 }

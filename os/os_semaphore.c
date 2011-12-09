@@ -4,8 +4,13 @@
  * \{
  */
 static enum os_event_status os_event_sempahore_is_triggered(void *args);
+#if CONFIG_OS_USE_PRIORITY == true
 static bool os_event_semaphore_priority_sort(struct os_task_minimal *task1,
-		struct os_task_minimal *task2);
+		struct os_task_minimal *task2)
+{
+	return (task1->priority <= task2->priority);
+}
+#endif
 /*!
  * \}
  */
@@ -16,12 +21,6 @@ const struct os_event_descriptor semaphore_event_descriptor = {
 #endif
 	.is_triggered = os_event_sempahore_is_triggered
 };
-
-static bool os_event_semaphore_priority_sort(struct os_task_minimal *task1,
-		struct os_task_minimal *task2)
-{
-	return (task1->priority <= task2->priority);
-}
 
 /*!
  * \brief Take the semphore, use by the event.
