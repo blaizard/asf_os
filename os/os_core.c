@@ -127,13 +127,21 @@ void __os_task_enable(struct os_task_minimal *task)
 	while (last_task->next != os_current_task->next) {
 		last_task = last_task->next;
 	}
-	// Add the task to the chain list
+	// Add the task to the chain list. Different behavior regarding the
+	// application task because for the event handler uses this task to run
+#if CONFIG_OS_USE_EVENTS == true
+	// The application task is disabled in the event scheduler
+	task->next = last_task->next;
+#else
+	// If the application task is running, remove it from the active task
+	// list
 	if (last_task == &os_app) {
 		task->next = task;
 	}
 	else {
 		task->next = last_task->next;
 	}
+#endif
 	last_task->next = task;
 }
 
@@ -185,7 +193,7 @@ void os_task_disable(struct os_task *task)
 {
 	// Unregister this task from the active task list
 	os_enter_critical();
-	// Make sure the task is already enabled
+	// Make sure the task is enabled
 	if (os_task_is_enabled(task)) {
 		__os_task_disable(&task->core);
 	}

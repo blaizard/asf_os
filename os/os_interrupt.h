@@ -63,7 +63,7 @@ struct os_interrupt {
 void os_interrupt_setup(struct os_interrupt *interrupt, task_ptr_t task_ptr,
 		void *args);
 
-/*! \brief Trigger a software interrupt.
+/*! \brief Manually trigger a software interrupt.
  * \ingroup group_os_public_api
  * \param interrupt The interrupt to trigger
  * \pre The interrupt must be previously setup with \ref os_interrupt_setup
@@ -86,10 +86,21 @@ static inline void os_interrupt_set_priority(struct os_interrupt *interrupt, enu
  * \ingroup group_os_public_api
  * \param interrupt The interrupt which priority is requested
  * \return The interrupt priority
+ * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
  */
 static inline enum os_priority os_interrupt_get_priority(struct os_interrupt *interrupt) {
 	return os_task_get_priority((struct os_task *) interrupt);
 }
+#endif
+
+#if CONFIG_OS_USE_EVENTS == true
+/*! \brief Trigger an interrupt on a specific event
+ * \ingroup group_os_public_api
+ * \param interrupt The interrupt to wakeup
+ * \param event The event used to trigger the interrupt
+ * \pre \ref CONFIG_OS_USE_EVENTS needs to be set
+ */
+void os_interrupt_sleep(struct os_interrupt *interrupt, struct os_event *event);
 #endif
 
 /*!

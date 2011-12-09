@@ -36,17 +36,17 @@ static inline void os_semaphore_create_event(struct os_event *event,
 	os_event_create(event, &semaphore_event_descriptor, (void *) sem);
 }
 
-/*! \brief Releases a semaphore.
- * \param sem The semaphore to release
- * \pre The semaphore must have previously been created
- */
-void os_sempahore_release(struct os_semaphore *sem);
-
 /*! \brief Take a semaphore. If no semaphore is available, wait until it gets
  * free
  * \param sem The semaphore to take
  * \pre The semaphore must have previously been created
  */
 void os_semaphore_take(struct os_semaphore *sem);
+
+/*! \brief Releases a semaphore.
+ * \param sem The semaphore to release
+ * \pre The semaphore must have previously been created
+ */
+void os_sempahore_release(struct os_semaphore *sem);
 
 #endif // __OS_SEMAPHORE_H__

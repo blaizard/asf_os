@@ -1,5 +1,7 @@
 #include "os_core.h"
 
+#if CONFIG_OS_USE_EVENTS == true
+
 static struct os_event *os_current_event = NULL;
 
 static inline struct os_task_minimal *os_event_pop_task(struct os_event *event) {
@@ -25,8 +27,94 @@ static inline void os_event_pop(struct os_event *event) {
 	}
 }
 
+void os_event_create(struct os_event *event,
+		const struct os_event_descriptor *descriptor, void *args)
+{
+	// Fill the event structure
+	event->desc.sort = descriptor->sort;
+	event->desc.start = descriptor->start;
+	event->desc.is_triggered = descriptor->is_triggered;
+	event->args = args;
+}
+
+static inline void __os_event_insert_task_after(struct os_task_minimal *task,
+		struct os_task_minimal *new_task) {
+	new_task->next = task->next;
+	task->next = new_task;
+}
+
+static inline void __os_event_insert_task_begining(struct os_event *event,
+		struct os_task_minimal *task) {
+	task->next = event->task;
+	event->task = task;
+}
+
+static inline void __os_event_enable(struct os_event *event) {
+	event->next = os_current_event->next;
+	os_current_event = event;
+}
+
+static inline void __os_event_start(struct os_event *event) {
+	if (event->desc.start) {
+		event->desc.start(event->args);
+	}
+}
+
+bool os_event_sort_fifo(struct os_task_minimal *task1,
+		struct os_task_minimal *task2)
+{
+	return true;
+}
+
+bool os_event_sort_lifo(struct os_task_minimal *task1,
+		struct os_task_minimal *task2)
+{
+	return false;
+}
+
+void __os_event_register(struct os_event *event, struct os_task_minimal *task)
+{
+	struct os_event *current_event;
+	struct os_task_minimal *prev_task = NULL;
+	struct os_task_minimal *current_task;
+	bool (*sort_fct)(struct os_task_minimal *, struct os_task_minimal *);
+
+	// Get the appropriate sorting function
+	sort_fct = os_event_sort_fifo;
+	if (event->desc.sort) {
+		sort_fct = event->desc.sort;
+	}
+
+	// Enable the application task if not done already, before messing up
+	// with the task context
+	__os_task_enable_application();
+
+	// Add the task to the event task list
+	current_task = event->task;
+	while (current_task && sort_fct(current_task, task)) {
+		prev_task = current_task;
+		current_task = current_task->next;
+	}
+	if (prev_task) {
+		__os_event_insert_task_after(prev_task, task);
+	}
+	else {
+		__os_event_insert_task_begining(event, task);
+	}
+
+	// Add this event to the event list if not done already
+	current_event = os_current_event;
+	while (current_event != event) {
+		if (current_event == NULL) {
+			__os_event_enable(event);
+			break;
+		}
+		current_event = current_event->next;
+	}
+}
+
 /*!
- * Events
+ * Event scheduler
  */
 bool os_event_scheduler(void)
 {
@@ -37,6 +125,8 @@ bool os_event_scheduler(void)
 
 	// If no event, return
 	if (!event) {
+		// Disable the application task
+		__os_task_disable_application();
 		return false;
 	}
 
@@ -68,3 +158,48 @@ bool os_event_scheduler(void)
 	// There is at least 1 event in the queue
 	return true;
 }
+
+/*!
+ * Task API Extension
+ * \{
+ */
+struct os_task_minimal os_event_alternate_task = {
+	.next = NULL
+};
+
+#if CONFIG_OS_USE_SW_INTERRUPTS == true
+void os_interrupt_sleep(struct os_interrupt *interrupt, struct os_event *event)
+{
+	os_enter_critical();
+	__os_event_start(event);
+	__os_event_register(event, (struct os_task_minimal *) interrupt);
+	os_leave_critical();
+}
+#endif
+
+void os_task_sleep(struct os_task *task, struct os_event *event)
+{
+	extern struct os_task_minimal *os_current_task;
+
+	// Start the event
+	__os_event_start(event);
+
+	os_enter_critical();
+	// If the task is enabled, send it to sleep
+	if (os_task_is_enabled(task)) {
+		__os_task_disable(&task->core);
+	}
+	// Save the next current task pointer because it will be erase by the
+	// sleep operation
+	os_event_alternate_task.next = os_current_task->next;
+	// Associate the task with its event and start it
+	__os_event_register(event, (struct os_task_minimal *) task);
+	// Call the scheduler
+	os_task_switch_context(false);
+	os_leave_critical();
+}
+/*!
+ * \}
+ */
+
+#endif // CONFIG_OS_USE_EVENTS == true

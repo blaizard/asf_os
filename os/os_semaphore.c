@@ -4,20 +4,23 @@
  * \{
  */
 static enum os_event_status os_event_sempahore_is_triggered(void *args);
-static bool os_event_semaphore_sort(struct os_task_minimal *task1,
+static bool os_event_semaphore_priority_sort(struct os_task_minimal *task1,
 		struct os_task_minimal *task2);
 /*!
  * \}
  */
 
 const struct os_event_descriptor semaphore_event_descriptor = {
-	.sort = os_event_semaphore_sort,
+#if CONFIG_OS_USE_PRIORITY == true
+	.sort = os_event_semaphore_priority_sort,
+#endif
 	.is_triggered = os_event_sempahore_is_triggered
 };
 
-static bool os_event_semaphore_sort(struct os_task_minimal *task1,
+static bool os_event_semaphore_priority_sort(struct os_task_minimal *task1,
 		struct os_task_minimal *task2)
 {
+	return (task1->priority <= task2->priority);
 }
 
 /*!

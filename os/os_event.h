@@ -24,7 +24,15 @@ enum os_event_status {
  */
 
 struct os_event_descriptor {
-	bool (*sort)(struct os_task_minimal *args1, struct os_task_minimal *args2);
+	/*! \brief Sorting function. This function compare 2 tasks.
+	 * The following helper functions are available:
+	 * - \ref os_event_sort_fifo
+	 * - \ref os_event_sort_lifo
+	 * \param task1 The first task used in the comparison
+	 * \param task2 The second task used in the comparison
+	 * \return true if task1 should be placed before task2, false otherwise.
+	 */
+	bool (*sort)(struct os_task_minimal *task1, struct os_task_minimal *task2);
 	void (*start)(void *args);
 	enum os_event_status (*is_triggered)(void *);
 };
@@ -48,6 +56,18 @@ struct os_event {
 	void *args;
 };
 
+/*!
+ * \name Event Helper Functions
+ * \{
+ */
+bool os_event_sort_fifo(struct os_task_minimal *task1,
+		struct os_task_minimal *task2);
+bool os_event_sort_lifo(struct os_task_minimal *task1,
+		struct os_task_minimal *task2);
+/*!
+ * \}
+ */
+
 /*! \brief Associate an event with a task.
  * The last task added will be the first task out.
  * Event can only be added to a task which is not active.
@@ -55,6 +75,16 @@ struct os_event {
 static inline void os_event_add_task_lifo(struct os_event *event, struct os_task_minimal *task) {
 	task->next = event->task;
 	event->task = task;
+}
+
+static inline void os_event_add_task_fifo(struct os_event *event, struct os_task_minimal *task) {
+	struct os_task_minimal **last_task = &event->task;
+	// Look for the last task in the list
+	while (*last_task) {
+		last_task = &(*last_task)->next;
+	}
+	*last_task = task;
+	task->next = NULL;
 }
 
 /*! \brief Event scheduler
@@ -79,10 +109,29 @@ static inline bool os_event_scheduler(void) {
 void os_event_create(struct os_event *event,
 		const struct os_event_descriptor *descriptor, void *args);
 
-/*! \brief Send a task to sleep.
- * The task will wake up uppon a specific event
+/*! \brief Associate a task with an event
  * \ingroup group_os_public_api
  */
-void os_task_sleep(struct os_task *task, struct os_event *trigger);
+void __os_event_register(struct os_event *event, struct os_task_minimal *task);
+
+#if CONFIG_OS_USE_EVENTS == true
+	/*! This macro will test if a alternative current task is needed.
+	 * It will restore the next current task previously erased by
+	 * os_task_sleep, call the scheduler and clear the flag to prevent the
+	 * next iteration to use it.
+	 */
+	#define OS_SCHEDULER_POST_EVENT_HOOK() \
+		do { \
+			extern struct os_task_minimal os_event_alternate_task; \
+			extern struct os_task_minimal *os_current_task; \
+			if (os_event_alternate_task.next) { \
+				struct os_task_minimal *current_task; \
+				os_current_task = &os_event_alternate_task; \
+				current_task = os_task_scheduler(); \
+				os_event_alternate_task.next = NULL; \
+				return current_task;\
+			} \
+		} while (false)
+#endif
 
 #endif // __OS_EVENT_H__

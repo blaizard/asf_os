@@ -293,6 +293,8 @@ struct os_task_minimal *os_task_scheduler(void);
 #define OS_S_TO_TICK(time_s) \
 		((time_s) * CONFIG_OS_TICK_HZ)
 
+#include "os_event.h"
+
 /*! \name Tasks
  *
  * Set of functions to manage a task
@@ -373,10 +375,21 @@ static inline void os_task_set_priority(struct os_task *task, enum os_priority p
  * \ingroup group_os_public_api
  * \param task The task which priority is requested
  * \return The task priority
+ * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
  */
 static inline enum os_priority os_task_get_priority(struct os_task *task) {
 	return task->core.priority_counter;
 }
+#endif
+
+#if CONFIG_OS_USE_EVENTS == true
+/*! \brief Send the task to sleep and wake it up uppon a specific event
+ * \ingroup group_os_public_api
+ * \param task The task to send to sleep
+ * \param event The event used to wakeup the task
+ * \pre \ref CONFIG_OS_USE_EVENTS needs to be set
+ */
+void os_task_sleep(struct os_task *task, struct os_event *event);
 #endif
 
 /*!
@@ -386,7 +399,6 @@ static inline enum os_priority os_task_get_priority(struct os_task *task) {
 /* Include OS modules */
 #include "os_debug.h"
 #include "os_interrupt.h"
-#include "os_event.h"
 #include "os_semaphore.h"
 
 /*! \name Kernel Control
@@ -519,9 +531,7 @@ static inline struct os_task_minimal *os_task_switch_context_int_handler_hook(vo
 #if CONFIG_OS_DEBUG
 	HOOK_OS_DEBUG_TICK();
 #endif
-#if HOOK_OS_TICK
 	HOOK_OS_TICK();
-#endif
 	// Task switch context
 	return os_task_scheduler();
 }
@@ -535,6 +545,10 @@ static inline struct os_task_minimal *os_task_switch_context_hook(void) {
 #ifdef OS_SCHEDULER_POST_INTERRUPT_HOOK
 	// Clear the software interrupt if needed
 	OS_SCHEDULER_POST_INTERRUPT_HOOK();
+#endif
+#ifdef OS_SCHEDULER_POST_EVENT_HOOK
+	// Use the alternate task if any
+	OS_SCHEDULER_POST_EVENT_HOOK();
 #endif
 	// Task switch context
 	return os_task_scheduler();
@@ -564,6 +578,18 @@ static inline bool __os_task_is_application(void) {
 static inline struct os_task_minimal *__os_task_get_application(void) {
 	extern struct os_task_minimal os_app;
 	return &os_app;
+}
+/*! \brief Enable the application task
+ */
+static inline void __os_task_enable_application(void) {
+	extern struct os_task_minimal os_app;
+	os_task_enable((struct os_task *) &os_app);
+}
+/*! \brief Disable the application task
+ */
+static inline void __os_task_disable_application(void) {
+	extern struct os_task_minimal os_app;
+	os_task_disable((struct os_task *) &os_app);
 }
 /*! \copydoc os_task_enable
  * This function will push the task at the end of the chain list
