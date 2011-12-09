@@ -195,14 +195,14 @@ typedef uint32_t os_tick_t;
 #endif
 
 enum os_task_option {
-	/*! Default options
+	/*! \brief Default options
 	 */
 	OS_TASK_DEFAULT = 0,
-	/*! Disable the task before its execution.\n
+	/*! \brief Disable the task before its execution.\n
 	 * It can be enable at any time using \ref os_task_enable
 	 */
 	OS_TASK_DISABLE = 1,
-	/*! Use a custom stack for this task. The user must previously allocate
+	/*! \brief Use a custom stack for this task. The user must previously allocate
 	 * memory for \ref os_task::stack. This option is available only if
 	 * \ref CONFIG_OS_USE_MALLOC is set.
 	 */
@@ -212,19 +212,19 @@ enum os_task_option {
 /*! This structure represents the minimalistic task context
  */
 struct os_task_minimal {
-	/*! Stack pointer. Will always be the 1rst element of this structure,
+	/*! \brief Stack pointer. Will always be the 1rst element of this structure,
 	 * to ensure the best optimization.
 	 */
 	void *sp;
-	/*! Pointer of the next task in the list.
+	/*! \brief Pointer of the next task in the list.
 	 * Active tasks are registered within a chain list.
 	 */
 	struct os_task_minimal *next;
 #if CONFIG_OS_USE_PRIORITY == true
-	/*! Priority of the task.
+	/*! \brief Priority of the task.
 	 */
 	enum os_priority priority;
-	/*! Use to manage the task priorities
+	/*! \brief Use to manage the task priorities
 	 */
 	enum os_priority priority_counter;
 #endif
@@ -233,18 +233,18 @@ struct os_task_minimal {
 /*! Structure holding the context of a task
  */
 struct os_task {
-	/*! Minimal stack context
+	/*! \brief Minimal stack context
 	 */
 	struct os_task_minimal core;
-	/*! A pointer on a memory space reserved for the stack
+	/*! \brief A pointer on a memory space reserved for the stack
 	 */
 	uint8_t *stack;
-	/*! Task options
+	/*! \brief Task options
 	 */
 	enum os_task_option options;
 };
 
-/*! Task function prototype
+/*! \brief Task function prototype
  * \param args Arguments passed to the task in a form of an empty pointer
  */
 typedef void (*task_ptr_t)(void *args);
