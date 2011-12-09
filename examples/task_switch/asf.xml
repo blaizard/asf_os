@@ -1,0 +1,18 @@
+<asf xmlversion="1.0">
+	<module type="application" id="avr32.applications.os.examples.task_switch" caption="OS">
+
+		<info type="description" value="summary">
+		Simple task switching example
+		</info>
+
+                <!-- OS configuration //-->
+		<build type="header-file" value="conf_os.h"/>
+
+                <build type="c-source" value="main.c"/>
+		<require idref="avr32.drivers.gpio"/>
+		<require idref="avr32.drivers.pm"/>
+                <require idref="avr32.services.os"/>
+
+                <device-support value="uc3a"/>
+	</module>
+</asf>
