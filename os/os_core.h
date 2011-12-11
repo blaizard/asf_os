@@ -1,11 +1,24 @@
+/*! \file
+ * \brief eeOS Core
+ * \author Blaise Lengrand (blaise.lengrand@gmail.com)
+ * \version 0.1
+ * \date 2011
+ *
+ * \section eeos_license License
+ * eeOS is provided in source form for FREE evaluation, for
+ * educational use or for peaceful research. If you plan on using eeOS in a
+ * commercial product you need to contact the author to properly license
+ * its use in your product. The fact that the  source is provided does
+ * NOT mean that you can use it without paying a licensing fee.
+ */
+
 #ifndef __OS_CORE_H__
 #define __OS_CORE_H__
 
-#include "compiler.h"
 #include "os_port.h"
 #include "conf_os.h"
 
-/*! \defgroup group_os Operating System
+/*! \defgroup group_os Embedded Event-based Operating System (eeOS)
  * \brief This page contains all the documentation related to this operating
  * system (\ref OS_VERSION).
  * - Preemptive and/or cooperative round-robin multi-tasking
@@ -439,6 +452,12 @@ static inline void os_start(uint32_t ref_hz) {
 	}
 }
 
+/*! \brief Get the current version of the running operating system
+ * \return A string containing the version of the OS.
+ */
+static inline uint8_t *os_get_version(void) {
+	return OS_VERSION;
+}
 /*!
  * \}
  */

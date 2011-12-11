@@ -1,3 +1,17 @@
+/*! \file
+ * \brief eeOS Events
+ * \author Blaise Lengrand (blaise.lengrand@gmail.com)
+ * \version 0.1
+ * \date 2011
+ *
+ * \section eeos_license License
+ * eeOS is provided in source form for FREE evaluation, for
+ * educational use or for peaceful research. If you plan on using eeOS in a
+ * commercial product you need to contact the author to properly license
+ * its use in your product. The fact that the  source is provided does
+ * NOT mean that you can use it without paying a licensing fee.
+ */
+
 #include "os_core.h"
 
 #if CONFIG_OS_USE_EVENTS == true
@@ -94,7 +108,7 @@ void __os_event_register(struct os_event *event, struct os_task_minimal *task)
 	// with the task context
 	__os_task_enable_application();
 
-	// Add the task to the event task list
+	// Add the task to the event sorted task list
 	current_task = event->task;
 	while (current_task && sort_fct(current_task, task)) {
 		prev_task = current_task;
@@ -162,6 +176,10 @@ bool os_event_scheduler(void)
 
 	// There is at least 1 event in the queue
 	return true;
+}
+
+void os_event_create_from_function(struct os_event *event, bool (*trigger)(void *))
+{
 }
 
 /*!

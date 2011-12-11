@@ -1,3 +1,17 @@
+/*! \file
+ * \brief eeOS Core
+ * \author Blaise Lengrand (blaise.lengrand@gmail.com)
+ * \version 0.1
+ * \date 2011
+ *
+ * \section eeos_license License
+ * eeOS is provided in source form for FREE evaluation, for
+ * educational use or for peaceful research. If you plan on using eeOS in a
+ * commercial product you need to contact the author to properly license
+ * its use in your product. The fact that the  source is provided does
+ * NOT mean that you can use it without paying a licensing fee.
+ */
+
 #include "compiler.h"
 #include "os_core.h"
 
@@ -11,6 +25,9 @@
  * \}
  */
 
+/*! \brief Context of the application task.
+ * \note This context is available only after the call of \ref os_start
+ */
 struct os_task_minimal os_app = {
 	.next = &os_app,
 #if CONFIG_OS_USE_PRIORITY == true
@@ -18,8 +35,14 @@ struct os_task_minimal os_app = {
 	.priority_counter = OS_PRIORITY_1,
 #endif
 };
+
+/*! \brief Current task running
+ */
 struct os_task_minimal *os_current_task = &os_app;
+
 #if CONFIG_OS_USE_TICK_COUNTER == true
+/*! \brief Tick counter
+ */
 volatile os_tick_t tick_counter = 0;
 #endif
 

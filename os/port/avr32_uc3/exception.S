@@ -1,45 +1,15 @@
-/**
- * \file
+/*! \file
+ * \brief eeOS 32-bit AVR UC3 Port
+ * \author Blaise Lengrand (blaise.lengrand@gmail.com)
+ * \version 0.1
+ * \date 2011
  *
- * \brief Exception and interrupt vectors to use with FreeRTOS.
- *
- * \note This file maps all events supported by an AVR UC3.
- *
- * \note For any project, there should be one and only one exception.S file.
- *       When FreeRTOS is used, this exception.S file is the one to keep (and
- *       possibly modify) over other exception.S files. 
- *
- * Copyright (C) 2009 - 2011 Atmel Corporation. All rights reserved.
- *
- * \page License
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * 3. The name of Atmel may not be used to endorse or promote products derived
- * from this software without specific prior written permission.
- *
- * 4. This software may only be redistributed and used in connection with an
- * Atmel AVR product.
- *
- * THIS SOFTWARE IS PROVIDED BY ATMEL "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT ARE
- * EXPRESSLY AND SPECIFICALLY DISCLAIMED. IN NO EVENT SHALL ATMEL BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
- * DAMAGE.
+ * \section eeos_license License
+ * eeOS is provided in source form for FREE evaluation, for
+ * educational use or for peaceful research. If you plan on using eeOS in a
+ * commercial product you need to contact the author to properly license
+ * its use in your product. The fact that the  source is provided does
+ * NOT mean that you can use it without paying a licensing fee.
  */
 
 #if !__AVR32_UC__ && !__AVR32_AP__

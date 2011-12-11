@@ -1,6 +1,21 @@
+/*! \file
+ * \brief eeOS 32-bit AVR UC3 Port
+ * \author Blaise Lengrand (blaise.lengrand@gmail.com)
+ * \version 0.1
+ * \date 2011
+ *
+ * \section eeos_license License
+ * eeOS is provided in source form for FREE evaluation, for
+ * educational use or for peaceful research. If you plan on using eeOS in a
+ * commercial product you need to contact the author to properly license
+ * its use in your product. The fact that the  source is provided does
+ * NOT mean that you can use it without paying a licensing fee.
+ */
+
 #ifndef __OS_PORT_H__
 #define __OS_PORT_H__
 
+#include "compiler.h"
 #include "interrupt.h"
 
 /*!
