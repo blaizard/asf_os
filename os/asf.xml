@@ -38,6 +38,8 @@
                 <build type="header-file" value="os_event.h"/>
 		<build type="c-source" value="os_semaphore.c"/>
 		<build type="header-file" value="os_semaphore.h"/>
+		<build type="c-source" value="os_statistics.c"/>
+		<build type="header-file" value="os_statistics.h"/>
                 <build type="include-path" value="."/>
 
                 <!-- OS porting functions //-->

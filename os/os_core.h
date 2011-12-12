@@ -5,8 +5,8 @@
  * \date 2011
  *
  * \section eeos_license License
- * eeOS is provided in source form for FREE evaluation, for
- * educational use or for peaceful research. If you plan on using eeOS in a
+ * \ref eeos is provided in source form for FREE evaluation, for
+ * educational use or for peaceful research. If you plan on using \ref eeos in a
  * commercial product you need to contact the author to properly license
  * its use in your product. The fact that the  source is provided does
  * NOT mean that you can use it without paying a licensing fee.
@@ -18,17 +18,22 @@
 #include "os_port.h"
 #include "conf_os.h"
 
-/*! \defgroup group_os Embedded Event-based Operating System (eeOS)
- * \brief This page contains all the documentation related to this operating
+/*! \defgroup eeos eeOS
+ * \brief eeOS is a Embedded Event-driven Operating System.
+ * This page contains all the documentation related to this operating
  * system (\ref OS_VERSION).
- * - Preemptive and/or cooperative round-robin multi-tasking
- * - Very scalable
- * - Task priority
- * - Hook points
- * - Software interrupt with priority
- * - Doxygen documented
- * - Advanced event system
- * - Semaphores with priority inheritance
+ * - Features:
+ *   - Real-Time OS
+ *   - Preemptive and/or cooperative round-robin multi-tasking
+ *   - Very scalable
+ *   - Task priority
+ *   - Hook points
+ *   - Software interrupt with priority
+ *   - Doxygen documented
+ *   - Advanced event system
+ *   - Semaphores with priority inheritance
+ * - Targets:
+ *   - MISRA-C compatible
  *
  * All the actives tasks are stored in a chain list.
  * The current task is the task pointed by \ref os_current_task.
@@ -414,6 +419,7 @@ void os_task_sleep(struct os_task *task, struct os_event *event);
  */
 
 /* Include OS modules */
+#include "os_statistics.h"
 #include "os_debug.h"
 #include "os_interrupt.h"
 #include "os_semaphore.h"

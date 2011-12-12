@@ -32,9 +32,13 @@ void led_blink(void *raw_args)
 
 void task2(void *args)
 {
+	volatile static uint32_t task_switch;
+	volatile static uint32_t jitter;
 	while (1) {
 		gpio_tgl_gpio_pin(LED3_GPIO);
 		os_task_delay(OS_MS_TO_TICK(500));
+		task_switch = os_statistics_get_task_switch();
+		jitter = os_statistics_get_task_switch_jitter();
 	}
 }
 
@@ -67,8 +71,8 @@ int main(void)
 	os_task_create(&task_1, led_blink, &args_1, 500, OS_TASK_DEFAULT);
 	os_task_create(&task_2, led_blink, &args_2, 500, OS_TASK_DEFAULT);
 	os_task_create(&task_3, led_blink, &args_3, 500, OS_TASK_DEFAULT);
-	os_task_create(&task_4, led_blink, &args_4, 500, OS_TASK_DEFAULT);
-	//os_task_create(&task_4, task2, NULL, 500, OS_TASK_DEFAULT);
+	//os_task_create(&task_4, led_blink, &args_4, 500, OS_TASK_DEFAULT);
+	os_task_create(&task_4, task2, NULL, 500, OS_TASK_DEFAULT);
 
 	//os_task_set_priority(&task_2, OS_PRIORITY_3);
 

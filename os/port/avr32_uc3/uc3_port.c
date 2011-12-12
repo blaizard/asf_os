@@ -5,8 +5,8 @@
  * \date 2011
  *
  * \section eeos_license License
- * eeOS is provided in source form for FREE evaluation, for
- * educational use or for peaceful research. If you plan on using eeOS in a
+ * \ref eeos is provided in source form for FREE evaluation, for
+ * educational use or for peaceful research. If you plan on using \ref eeos in a
  * commercial product you need to contact the author to properly license
  * its use in your product. The fact that the  source is provided does
  * NOT mean that you can use it without paying a licensing fee.
@@ -162,6 +162,8 @@ ISR(os_task_switch_context_int_handler, OS_SCHEDULER_IRQ_GROUP,
 		"st.w r1[0], sp\n\t"
 	);
 
+	HOOK_OS_STATISTICS_SWITCH_CONTEXT_START(42);
+
 	// Clear the interrupt flag
 	os_task_scheduler_clear_int();
 	os_task_switch_context_int_handler_hook();
@@ -172,6 +174,11 @@ ISR(os_task_switch_context_int_handler, OS_SCHEDULER_IRQ_GROUP,
 
 		// Restore context
 		"popm r0-r7\n\t"
+	);
+
+	HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP();
+
+	__asm__ __volatile__ (
 		"rete\n\t"
 	);
 #if __ICCAVR32__
