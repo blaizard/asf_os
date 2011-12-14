@@ -80,7 +80,7 @@ void os_semaphore_take(struct os_semaphore *sem);
  * \param sem The semaphore to release
  * \pre The semaphore must have previously been created
  */
-void os_sempahore_release(struct os_semaphore *sem);
+void os_semaphore_release(struct os_semaphore *sem);
 
 /*!
  * \}

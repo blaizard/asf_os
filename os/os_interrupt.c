@@ -25,18 +25,18 @@ void __os_interrupt_handler(os_ptr_t args)
 	// Disable scheduler interrupts
 	os_enter_critical();
 	// Remove the interrupt from the chain list to prevent another execution
-	__os_task_disable((struct os_task_minimal *) interrupt);
+	__os_process_disable((struct os_process *) interrupt);
 	// Execute the interrupt handler
-	interrupt->task_ptr(interrupt->args);
+	interrupt->int_ptr(interrupt->args);
 	// Manually call the scheduler
-	os_task_switch_context(true);
+	os_switch_context(true);
 }
 
-void os_interrupt_setup(struct os_interrupt *interrupt, os_task_ptr_t task_ptr,
+void os_interrupt_setup(struct os_interrupt *interrupt, os_proc_ptr_t int_ptr,
 		os_ptr_t args)
 {
 	// Fill the structure
-	interrupt->task_ptr = task_ptr;
+	interrupt->int_ptr = int_ptr;
 	interrupt->args = args;
 	// Setup the task to run in the application context
 	interrupt->core.sp = NULL;

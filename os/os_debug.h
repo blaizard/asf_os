@@ -45,7 +45,7 @@
 
 #define HOOK_OS_DEBUG_TICK() \
 		do { \
-			struct os_task *current_task = os_task_current(); \
+			struct os_task *current_task = os_task_get_current(); \
 			if (current_task != NULL && \
 					*((uint8_t *) current_task->stack) != CONFIG_OS_DEBUG_UINT8_PATTERN) { \
 				HOOK_OS_STACK_OVERFLOW(); \

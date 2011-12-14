@@ -9,6 +9,7 @@ struct os_task task_1, task_2, task_3, task_4;
 
 static struct os_interrupt int_1;
 static struct os_semaphore sem;
+static struct os_mutex mutex;
 static struct os_event event;
 
 struct task_args {
@@ -23,10 +24,11 @@ void led_blink(void *raw_args)
 	struct task_args *args = (struct task_args *) raw_args;
 
 	while (1) {
-		os_task_sleep(os_task_current(), &event);
+		os_task_sleep(os_task_get_current(), &event);
 		gpio_tgl_gpio_pin(args->pin);
 		os_task_delay(OS_MS_TO_TICK(args->delay_ms));
-		os_sempahore_release(&sem);
+		//os_semaphore_release(&sem);
+		os_mutex_unlock(&mutex);
 	}
 }
 
@@ -37,8 +39,8 @@ void task2(void *args)
 	while (1) {
 		gpio_tgl_gpio_pin(LED3_GPIO);
 		os_task_delay(OS_MS_TO_TICK(500));
-		task_switch = os_statistics_get_task_switch();
-		jitter = os_statistics_get_task_switch_jitter();
+		task_switch = os_statistics_get_task_switch_time();
+		jitter = os_statistics_get_task_switch_time_jitter();
 	}
 }
 
@@ -69,7 +71,10 @@ int main(void)
 	pm_switch_to_osc0(&AVR32_PM, FOSC0, OSC0_STARTUP);
 
 	os_semaphore_create(&sem, 2, 2);
-	os_semaphore_create_event(&event, &sem);
+	//os_semaphore_create_event(&event, &sem);
+
+	os_mutex_create(&mutex);
+	os_mutex_create_event(&event, &mutex);
 
 	os_interrupt_setup(&int_1, task2, NULL);
 
@@ -79,7 +84,7 @@ int main(void)
 	os_task_create(&task_4, led_blink, &args_4, 500, OS_TASK_DEFAULT);
 	//os_task_create(&task_4, task2, NULL, 500, OS_TASK_DEFAULT);
 
-	os_task_set_priority(&task_2, OS_PRIORITY_1);
+	//os_task_set_priority(&task_2, OS_PRIORITY_2);
 
 	os_start(CPU_HZ);
 }

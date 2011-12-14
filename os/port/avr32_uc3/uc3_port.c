@@ -15,20 +15,20 @@
 #include "os_core.h"
 
 /*! Push a 32-bit value onto the stack of the task
- * \param task The current task holding the stack we want to update
+ * \param proc The current process holding the stack we want to update
  * \param value The 32-bit value to be pushed
  */
-#define PUSH(task, value) { \
-	(task)->sp = (uint32_t *) (task)->sp - 1; \
-	*((uint32_t *) (task)->sp) = (uint32_t) (value); \
+#define PUSH(proc, value) { \
+	(proc)->sp = (uint32_t *) (proc)->sp - 1; \
+	*((uint32_t *) (proc)->sp) = (uint32_t) (value); \
 }
 
 /* Declaration of the interrupt handler function
  */
 #if __GNUC__
-__attribute__((__interrupt__)) static void os_task_switch_context_int_handler(void);
+__attribute__((__interrupt__)) static void os_switch_context_int_handler(void);
 #elif __ICCAVR32__
-__interrupt static void os_task_switch_context_int_handler(void);
+__interrupt static void os_switch_context_int_handler(void);
 #endif
 
 #if CONFIG_OS_SCHEDULER_TYPE == CONFIG_OS_SCHEDULER_USE_COMPARE
@@ -38,14 +38,14 @@ __interrupt static void os_task_switch_context_int_handler(void);
 	{
 		cpu_irq_disable();
 		irq_initialize_vectors();
-		irq_register_handler((__int_handler) os_task_switch_context_int_handler,
+		irq_register_handler((__int_handler) os_switch_context_int_handler,
 				AVR32_CORE_COMPARE_IRQ, CONFIG_OS_SCHEDULER_IRQ_PRIORITY);
 		Set_system_register(AVR32_COMPARE, cpu_freq_hz / CONFIG_OS_TICK_HZ);
 		Set_system_register(AVR32_COUNT, 0);
 		cpu_irq_enable();
 	}
 
-	static inline void os_task_scheduler_clear_int(void) {
+	static inline void os_scheduler_clear_int(void) {
 		Set_system_register(AVR32_COMPARE, Get_system_register(AVR32_COMPARE));
 	}
 
@@ -60,7 +60,7 @@ __interrupt static void os_task_switch_context_int_handler(void);
 	{
 		cpu_irq_disable();
 		irq_initialize_vectors();
-		irq_register_handler((__int_handler) os_task_switch_context_int_handler,
+		irq_register_handler((__int_handler) os_switch_context_int_handler,
 				AVR32_RTC_IRQ, CONFIG_OS_SCHEDULER_IRQ_PRIORITY);
 		// fRTC = 115000 / 4 = 28750
 		rtc_init(&AVR32_RTC, RTC_OSC_RC, 1);
@@ -70,7 +70,7 @@ __interrupt static void os_task_switch_context_int_handler(void);
 		cpu_irq_enable();
 	}
 
-	static inline void os_task_scheduler_clear_int(void) {
+	static inline void os_scheduler_clear_int(void) {
 		(&AVR32_RTC)->icr = AVR32_RTC_ICR_TOPI_MASK;
 	}
 
@@ -118,7 +118,7 @@ __interrupt static void os_task_switch_context_int_handler(void);
 		};
 		cpu_irq_disable();
 		irq_initialize_vectors();
-		irq_register_handler((__int_handler) os_task_switch_context_int_handler,
+		irq_register_handler((__int_handler) os_switch_context_int_handler,
 				OS_SCHEDULER_TC_IRQ, CONFIG_OS_SCHEDULER_IRQ_PRIORITY);
 		tc_init_waveform(tc, &waveform_opt);
 		tc_write_rc(tc, CONFIG_OS_SCHEDULER_TC_CHANNEL,
@@ -129,7 +129,7 @@ __interrupt static void os_task_switch_context_int_handler(void);
 		cpu_irq_enable();
 	}
 
-	static inline void os_task_scheduler_clear_int(void) {
+	static inline void os_scheduler_clear_int(void) {
 		AVR32_TC.channel[CONFIG_OS_SCHEDULER_TC_CHANNEL].sr;
 	}
 
@@ -137,7 +137,7 @@ __interrupt static void os_task_switch_context_int_handler(void);
 
 #else
 
-	static inline void os_task_scheduler_clear_int(void) {
+	static inline void os_scheduler_clear_int(void) {
 	}
 	#define OS_SCHEDULER_IRQ_GROUP 0
 #endif
@@ -147,17 +147,17 @@ __attribute__((__naked__))
 #elif __ICCAVR32__
 	#pragma shadow_registers = full
 #endif
-ISR(os_task_switch_context_int_handler, OS_SCHEDULER_IRQ_GROUP,
+ISR(os_switch_context_int_handler, OS_SCHEDULER_IRQ_GROUP,
 		CONFIG_OS_SCHEDULER_IRQ_PRIORITY)
 {
-	extern struct os_task_minimal *os_current_task;
+	extern struct os_process *os_current_process;
 
 	__asm__ __volatile__ (
 		// Save context
         	"pushm r0-r7\n\t"
 
 		// Save the stack pointer
-		"mov r0, os_current_task\n\t"
+		"mov r0, os_current_process\n\t"
 		"ld.w r1, r0[0]\n\t"
 		"st.w r1[0], sp\n\t"
 	);
@@ -165,8 +165,8 @@ ISR(os_task_switch_context_int_handler, OS_SCHEDULER_IRQ_GROUP,
 	HOOK_OS_STATISTICS_SWITCH_CONTEXT_START(42);
 
 	// Clear the interrupt flag
-	os_task_scheduler_clear_int();
-	os_task_switch_context_int_handler_hook();
+	os_scheduler_clear_int();
+	os_switch_context_int_handler_hook();
 
 	__asm__ __volatile__ (
 		// Update the stack pointer
@@ -184,7 +184,7 @@ ISR(os_task_switch_context_int_handler, OS_SCHEDULER_IRQ_GROUP,
 #if __ICCAVR32__
 	#pragma diag_suppress=Pe174
 #endif
-	os_current_task = os_current_task;
+	os_current_process = os_current_process;
 #if __ICCAVR32__
 	#pragma diag_default=Pe174
 #endif
@@ -192,15 +192,15 @@ ISR(os_task_switch_context_int_handler, OS_SCHEDULER_IRQ_GROUP,
 
 #if __GNUC__
 __attribute__((__naked__))
-void _os_task_switch_context(void);
-void _os_task_switch_context(void)
+void _os_switch_context(void);
+void _os_switch_context(void)
 #elif __ICCAVR32__
 	#pragma shadow_registers = full
 	#pragma exception=0x100,0
-__exception void _os_task_switch_context(void)
+__exception void _os_switch_context(void)
 #endif
 {
-	extern struct os_task_minimal *os_current_task;
+	extern struct os_process *os_current_process;
 	extern bool os_interrupt_flag;
 
 	__asm__ __volatile__ (
@@ -222,7 +222,7 @@ __exception void _os_task_switch_context(void)
         	"pushm r0-r7\n\t" // r0-r7
 
 		// Save the stack pointer
-		"mov r0, os_current_task\n\t"
+		"mov r0, os_current_process\n\t"
 		"ld.w r1, r0[0]\n\t"
 		"st.w r1[0], sp\n"
 
@@ -230,7 +230,7 @@ __exception void _os_task_switch_context(void)
 		"bypass_context_save:"
 	);
 
-	os_task_switch_context_hook();
+	os_switch_context_hook();
 
 	__asm__ __volatile__ (
 		// Update the stack pointer
@@ -250,30 +250,30 @@ __exception void _os_task_switch_context(void)
 #if __ICCAVR32__
 	#pragma diag_suppress=Pe174
 #endif
-	os_current_task = os_current_task;
+	os_current_process = os_current_process;
 #if __ICCAVR32__
 	#pragma diag_default=Pe174
 #endif
 }
 
-bool os_task_context_load(struct os_task_minimal *task, os_task_ptr_t task_ptr, os_ptr_t args)
+bool os_process_context_load(struct os_process *proc, os_proc_ptr_t proc_ptr, os_ptr_t args)
 {
-	PUSH(task, 0); // R8
-	PUSH(task, 0); // R9
-	PUSH(task, 0); // R10
-	PUSH(task, 0); // R11
-	PUSH(task, args); // R12
-	PUSH(task, 0); // LR
-	PUSH(task, (void *) task_ptr); // PC
-	PUSH(task, CONFIG_OS_DEFAULT_SR_VALUE);
-	PUSH(task, 0); // R0
-	PUSH(task, 0); // R1
-	PUSH(task, 0); // R2
-	PUSH(task, 0); // R3
-	PUSH(task, 0); // R4
-	PUSH(task, 0); // R5
-	PUSH(task, 0); // R6
-	PUSH(task, 0); // R7
+	PUSH(proc, 0); // R8
+	PUSH(proc, 0); // R9
+	PUSH(proc, 0); // R10
+	PUSH(proc, 0); // R11
+	PUSH(proc, args); // R12
+	PUSH(proc, 0); // LR
+	PUSH(proc, (void *) proc_ptr); // PC
+	PUSH(proc, CONFIG_OS_DEFAULT_SR_VALUE);
+	PUSH(proc, 0); // R0
+	PUSH(proc, 0); // R1
+	PUSH(proc, 0); // R2
+	PUSH(proc, 0); // R3
+	PUSH(proc, 0); // R4
+	PUSH(proc, 0); // R5
+	PUSH(proc, 0); // R6
+	PUSH(proc, 0); // R7
 
 	return true;
 }

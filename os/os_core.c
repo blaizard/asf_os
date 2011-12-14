@@ -28,7 +28,7 @@
 /*! \brief Context of the application task.
  * \note This context is available only after the call of \ref os_start
  */
-struct os_task_minimal os_app = {
+struct os_process os_app = {
 	.next = &os_app,
 #if CONFIG_OS_USE_PRIORITY == true
 	.priority = OS_PRIORITY_1,
@@ -36,9 +36,9 @@ struct os_task_minimal os_app = {
 #endif
 };
 
-/*! \brief Current task running
+/*! \brief Current process running
  */
-struct os_task_minimal *os_current_task = &os_app;
+struct os_process *os_current_process = &os_app;
 
 #if CONFIG_OS_USE_TICK_COUNTER == true
 /*! \brief Tick counter
@@ -47,186 +47,124 @@ volatile os_tick_t tick_counter = 0;
 #endif
 
 #if CONFIG_OS_USE_PRIORITY == true
-struct os_task_minimal *os_task_scheduler(void)
+struct os_process *os_scheduler(void)
 {
 	do {
-		// Get the next task
-		os_current_task = os_current_task->next;
+		// Get the next process
+		os_current_process = os_current_process->next;
 		// Check wether its priority counter is null
-		if (!os_current_task->priority_counter) {
-			os_current_task->priority_counter = os_current_task->priority;
+		if (!os_current_process->priority_counter) {
+			os_current_process->priority_counter =
+					os_current_process->priority;
 			OS_SCHEDULER_PRE_INTERRUPT_HOOK();
-			return os_current_task;
+			return os_current_process;
 		}
 		// Decrease the priority counter
-		os_current_task->priority_counter--;
+		os_current_process->priority_counter--;
 	} while (true);
 }
 #else
-struct os_task_minimal *os_task_scheduler(void)
+struct os_process *os_scheduler(void)
 {
-	os_current_task = os_current_task->next;
+	os_current_process = os_current_process->next;
 	OS_SCHEDULER_PRE_INTERRUPT_HOOK();
-	return os_current_task;
+	return os_current_process;
 }
 #endif
 
-#if CONFIG_OS_USE_TICK_COUNTER == true
-void os_task_delay(os_tick_t tick_nb)
+struct os_process *os_get_current_process(void)
 {
-	os_tick_t start_tick, last_tick;
-	start_tick = tick_counter;
-	last_tick = tick_counter + tick_nb;
-	// Check if the counter has been wrapped
-	if (last_tick < start_tick) {
-		while (tick_counter > start_tick) {
-			os_yield();
-		}
-	}
-	while (tick_counter < last_tick) {
-		os_yield();
-	}
-}
-#endif
-
-bool os_task_create(struct os_task *task, os_task_ptr_t task_ptr, os_ptr_t args,
-		int stack_size, enum os_task_option options)
-{
-#if CONFIG_OS_USE_MALLOC == true
-	if (!(options & OS_TASK_USE_CUSTOM_STACK)) {
-		// Allocate memory for the stack size
-		if (!(task->stack = os_malloc(stack_size))) {
-			return false;
-		}
-	}
-#endif
-#if CONFIG_OS_DEBUG == true
-	HOOK_OS_DEBUG_TASK_ADD();
-#endif
-	// Save the options
-	task->options = options;
-	// Move the SP pointer to the end of the stack
-	task->core.sp = &task->stack[stack_size];
-#if CONFIG_OS_USE_PRIORITY == true
-	os_task_set_priority(task, CONFIG_OS_TASK_DEFAULT_PRIORITY);
-#endif
-	// Load context
-	if (!os_task_context_load(&task->core, task_ptr, args)) {
-		return false;
-	}
-	// Enable the task
-	task->core.next = NULL;
-	if (!(options & OS_TASK_DISABLE)) {
-		os_task_enable(task);
-	}
-
-	return true;
+	return os_current_process;
 }
 
-void os_task_delete(struct os_task *task)
+void __os_process_enable(struct os_process *proc)
 {
-	// Remove the task from the active task list
-	os_task_disable(task);
-	if (!(task->options & OS_TASK_USE_CUSTOM_STACK)) {
-		// Free the stack
-		os_free(task->stack);
-	}
-}
+	struct os_process *last_proc = proc;
 
-struct os_task *os_task_current(void)
-{
-	if (os_current_task == &os_app) {
-		return NULL;
+	// Look for the last process registered
+	last_proc = os_current_process->next;
+	while (last_proc->next != os_current_process->next) {
+		last_proc = last_proc->next;
 	}
-	return (struct os_task *) os_current_task;
-}
-
-void __os_task_enable(struct os_task_minimal *task)
-{
-	struct os_task_minimal *last_task = task;
-
-	// Look for the last task registered
-	last_task = os_current_task->next;
-	while (last_task->next != os_current_task->next) {
-		last_task = last_task->next;
-	}
-	// Add the task to the chain list. Different behavior regarding the
-	// application task because for the event handler uses this task to run
+	// Add the process to the chain list. Different behavior regarding the
+	// application task because for the event handler uses this proc to run
 #if CONFIG_OS_USE_EVENTS == true
-	// The application task is disabled in the event scheduler
-	task->next = last_task->next;
+	// The application process is disabled in the event scheduler
+	proc->next = last_proc->next;
 #else
-	// If the application task is running, remove it from the active task
+	// If the application process is running, remove it from the active process
 	// list
-	if (last_task == &os_app) {
-		task->next = task;
+	if (last_proc == &os_app) {
+		proc->next = proc;
 	}
 	else {
-		task->next = last_task->next;
+		proc->next = last_proc->next;
 	}
 #endif
-	last_task->next = task;
+	last_proc->next = proc;
 }
 
-void os_task_enable(struct os_task *task)
+void os_process_enable(struct os_process *proc)
 {
 	// The following code is critical
 	os_enter_critical();
 	// Make sure the task is not already enabled
-	if (!os_task_is_enabled(task)) {
-		__os_task_enable(&task->core);
+	if (!os_process_is_enabled(proc)) {
+		__os_process_enable(proc);
 	}
 	os_leave_critical();
 }
 
-bool os_task_is_enabled(struct os_task *task)
+bool os_process_is_enabled(struct os_process *proc)
 {
 	// Starts from the "next" element.
 	// There is maximum 1 element on the path before reaching the circular
 	// chain buffer.
-	struct os_task_minimal *last_task = os_current_task->next;
+	struct os_process *last_proc = os_current_process->next;
 	do {
-		if (last_task == (struct os_task_minimal *) task) {
+		if (last_proc == proc) {
 			return true;
 		}
-		last_task = last_task->next;
-	} while (last_task != os_current_task->next);
+		last_proc = last_proc->next;
+	} while (last_proc != os_current_process->next);
 	return false;
 }
 
-void __os_task_disable(struct os_task_minimal *task)
+void __os_process_disable(struct os_process *proc)
 {
-	struct os_task_minimal *last_task = task;
+	struct os_process *last_proc = proc;
 
-	// Look for the last task
-	while (last_task->next != task) {
-		last_task = last_task->next;
+	// Look for the last process
+	while (last_proc->next != proc) {
+		last_proc = last_proc->next;
 	}
-	// Remove the task from the chain list
-	if (last_task == task) {
+	// Remove the process from the chain list
+	if (last_proc == proc) {
+		// If this was the last process in the chain list, then remove
+		// it and add the application process instead
 		os_app.next = &os_app;
-		task->next = &os_app;
+		proc->next = &os_app;
 	}
 	else {
-		last_task->next = task->next;
+		last_proc->next = proc->next;
 	}
 }
 
-void os_task_disable(struct os_task *task)
+void os_process_disable(struct os_process *proc)
 {
-	// Unregister this task from the active task list
+	// Unregister this process from the active process list
 	os_enter_critical();
-	// Make sure the task is enabled
-	if (os_task_is_enabled(task)) {
-		__os_task_disable(&task->core);
+	// Make sure the process is enabled
+	if (os_process_is_enabled(proc)) {
+		__os_process_disable(proc);
 	}
-	os_task_switch_context(false);
+	os_switch_context(false);
 	os_leave_critical();
 }
 
 void os_yield(void)
 {
 	os_enter_critical();
-	os_task_switch_context(false);
+	os_switch_context(false);
 	os_leave_critical();
 }

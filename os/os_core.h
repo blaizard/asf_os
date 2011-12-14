@@ -30,20 +30,20 @@
  *   - Hook points
  *   - Software interrupt with priority
  *   - Doxygen documented
- *   - Advanced event system
+ *   - Advanced event system with priority
  *   - Semaphores with priority inheritance
  * - Targets:
  *   - MISRA-C compatible
  *
  * All the actives tasks are stored in a chain list.
- * The current task is the task pointed by \ref os_current_task.
+ * The current task is the task pointed by \ref os_current_process.
  * At the begining, when the task scheduler is not running the current process
  * is not a task so its information need to be storted in a specific context.
  * This context is \ref os_app. Therefore, at the begining the active task chain
  * list looks like this:
- * os_current_task -> os_app -> task1 -> task2 -> task1 -> task2 -> ...
+ * os_current_process -> os_app -> task1 -> task2 -> task1 -> task2 -> ...
  * During normal execution, os_app is not part of the chain list anymore:
- * os_current_task -> task1 -> task2 -> task1 -> task2 -> ...
+ * os_current_process -> task1 -> task2 -> task1 -> task2 -> ...
  */
 
 /*! \brief Current version of the operating system.
@@ -234,22 +234,22 @@ enum os_task_option {
 	OS_TASK_USE_CUSTOM_STACK = 2,
 };
 
-/*! This structure represents the minimalistic task context
+/*! This structure represents a process context
  */
-struct os_task_minimal {
+struct os_process {
 	/*! \brief Stack pointer. Will always be the 1rst element of this structure,
 	 * to ensure the best optimization.
 	 */
 	os_ptr_t sp;
-	/*! \brief Pointer of the next task in the list.
-	 * Active tasks are registered within a chain list.
+	/*! \brief Pointer of the next process in the list.
+	 * Active processes are registered within a chain list.
 	 */
-	struct os_task_minimal *next;
+	struct os_process *next;
 #if CONFIG_OS_USE_PRIORITY == true
-	/*! \brief Priority of the task.
+	/*! \brief Priority of the process.
 	 */
 	enum os_priority priority;
-	/*! \brief Use to manage the task priorities
+	/*! \brief Use to manage the process priorities
 	 */
 	enum os_priority priority_counter;
 #endif
@@ -258,9 +258,9 @@ struct os_task_minimal {
 /*! Structure holding the context of a task
  */
 struct os_task {
-	/*! \brief Minimal stack context
+	/*! \brief Minimal context
 	 */
-	struct os_task_minimal core;
+	struct os_process core;
 	/*! \brief A pointer on a memory space reserved for the stack
 	 */
 	uint8_t *stack;
@@ -269,15 +269,15 @@ struct os_task {
 	enum os_task_option options;
 };
 
-/*! \brief Task function prototype
- * \param args Arguments passed to the task in a form of an empty pointer
+/*! \brief Process function prototype
+ * \param args Arguments passed to the process
  */
-typedef void (*os_task_ptr_t)(os_ptr_t args);
+typedef void (*os_proc_ptr_t)(os_ptr_t args);
 
 /*! \brief This function will define the rules to change the task.
  * \return The new task context
  */
-struct os_task_minimal *os_task_scheduler(void);
+struct os_process *os_scheduler(void);
 
 /*! \defgroup group_os_public_api Public API
  * \brief Public application interface.
@@ -321,115 +321,8 @@ struct os_task_minimal *os_task_scheduler(void);
 #define OS_S_TO_TICK(time_s) \
 		((time_s) * CONFIG_OS_TICK_HZ)
 
-#include "os_event.h"
-
-/*! \name Tasks
- *
- * Set of functions to manage a task
- *
- * \{
- */
-
-/*! \brief Create a new task. By default, the new task will be automatically
- * added to the active task list unless specified.
- * \ingroup group_os_public_api
- * \param task A pointer on an empty structure which will contain the context of
- * the current task.
- * \param task_ptr Entry point of the task to be run.
- * \param args Arguments to pass to the task
- * \param stack_size The size of the stack in byte
- * \param options Specific options for the task (see \ref os_task_option)
- * \return true if the task has been correctly registered, false otherwise.
- */
-bool os_task_create(struct os_task *task, os_task_ptr_t task_ptr, os_ptr_t args,
-		int stack_size, enum os_task_option options);
-
-/*! \brief Delete a task
- * \ingroup group_os_public_api
- * \param task The task to be deleted
- */
-void os_task_delete(struct os_task *task);
-
-/*! \brief Enable the execution a task
- * \ingroup group_os_public_api
- * \param task The task to be enabled
- */
-void os_task_enable(struct os_task *task);
-
-/*! \brief Disable the execution of a task
- * \ingroup group_os_public_api
- * \param task The task to be disabled
- */
-void os_task_disable(struct os_task *task);
-
-/*! \brief Check wether a task is enabled or not
- * \ingroup group_os_public_api
- * \param task The task to be checked
- * \return true if enabled, false otherwise
- */
-bool os_task_is_enabled(struct os_task *task);
-
-#if CONFIG_OS_USE_TICK_COUNTER == true
-/*! \brief Block the execution of a task until a number of ticks have passed.
- * \ingroup group_os_public_api
- * \ref CONFIG_OS_TICK_HZ can be used to estimate a time delay.
- * \param tick_nb The number of ticks to wait for
- * \pre \ref CONFIG_OS_USE_TICK_COUNTER needs to be set first.
- * \warning This functon needs the preemptive scheduler to run. Therefore, it
- * cannot be used inside an interrupt or any other piece of code where the
- * tick interrupt is disabled.
- */
-void os_task_delay(os_tick_t tick_nb);
-#endif
-
-/*! \brief Get the current running task
- * \ingroup group_os_public_api
- * \return the current task. NULL if none is running.
- */
-struct os_task *os_task_current(void);
-
-#if CONFIG_OS_USE_PRIORITY == true
-/*! \brief Change the priority of a task
- * \ingroup group_os_public_api
- * \param task The task which needs some update
- * \param priority The new priority
- * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
- */
-static inline void os_task_set_priority(struct os_task *task, enum os_priority priority) {
-	// Not critical so no need to use the os_enter_critical function
-	task->core.priority = priority;
-	task->core.priority_counter = priority;
-}
-/*! \brief Get the priority of a task
- * \ingroup group_os_public_api
- * \param task The task which priority is requested
- * \return The task priority
- * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
- */
-static inline enum os_priority os_task_get_priority(struct os_task *task) {
-	return task->core.priority_counter;
-}
-#endif
-
-#if CONFIG_OS_USE_EVENTS == true
-/*! \brief Send the task to sleep and wake it up uppon a specific event
- * \ingroup group_os_public_api
- * \param task The task to send to sleep
- * \param event The event used to wakeup the task
- * \pre \ref CONFIG_OS_USE_EVENTS needs to be set
- */
-void os_task_sleep(struct os_task *task, struct os_event *event);
-#endif
-
-/*!
- * \}
- */
-
 /* Include OS modules */
-#include "os_statistics.h"
-#include "os_debug.h"
-#include "os_interrupt.h"
-#include "os_semaphore.h"
+#include "os_event.h"
 
 /*! \name Kernel Control
  *
@@ -471,9 +364,65 @@ static inline void os_start(uint32_t ref_hz) {
 static inline char *os_get_version(void) {
 	return OS_VERSION;
 }
+
+/*! \brief Get the current process
+ * \return A pointer on the current procress
+ */
+struct os_process *os_get_current_process(void);
+
+/*! \brief Enable the execution a process
+ * \ingroup group_os_public_api
+ * \param proc The process to be enabled
+ */
+void os_process_enable(struct os_process *proc);
+
+/*! \brief Disable the execution of a process
+ * \ingroup group_os_public_api
+ * \param proc The process to be disabled
+ */
+void os_process_disable(struct os_process *proc);
+
+/*! \brief Check wether a process is enabled or not
+ * \ingroup group_os_public_api
+ * \param proc The process to be checked
+ * \return true if enabled, false otherwise
+ */
+bool os_process_is_enabled(struct os_process *proc);
+
+#if CONFIG_OS_USE_PRIORITY == true
+/*! \brief Change the priority of a process
+ * \ingroup group_os_public_api
+ * \param proc The process which needs some update
+ * \param priority The new priority
+ * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
+ */
+static inline void os_process_set_priority(struct os_process *proc, enum os_priority priority) {
+	// Not critical so no need to use the os_enter_critical function
+	proc->priority = priority;
+	proc->priority_counter = priority;
+}
+/*! \brief Get the priority of a process
+ * \ingroup group_os_public_api
+ * \param proc The process which priority is requested
+ * \return The process priority
+ * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
+ */
+static inline enum os_priority os_process_get_priority(struct os_process *proc) {
+	return proc->priority_counter;
+}
+#endif
+
 /*!
  * \}
  */
+
+#include "os_statistics.h"
+#include "os_debug.h"
+#include "os_task.h"
+#include "os_interrupt.h"
+#include "os_semaphore.h"
+#include "os_mutex.h"
+
 
 /*! \defgroup os_port_group Porting functions
  * \brief Functions which should be implemented to port this operating system onto
@@ -502,9 +451,9 @@ static inline char *os_get_version(void) {
 void os_setup_scheduler(uint32_t ref_hz);
 
 /*!
- * \fn os_task_switch_context(bypass_context_saving)
- * \brief Context switch for a task.\n
- * Function used to schedule and switch between the tasks.\n
+ * \fn os_switch_context(bypass_context_saving)
+ * \brief Context switch for a process.\n
+ * Function used to schedule and switch between the processes.\n
  * This function will handle the return from a softwre interrupt. Therefore it
  * can be optimized to bypass the saving context part IF an interrupt is
  * running (if \ref os_interrupt_flag is true).
@@ -513,9 +462,9 @@ void os_setup_scheduler(uint32_t ref_hz);
  */
 
 /*!
- * \fn os_task_switch_context_int_handler
- * \brief Context switch for a task.\n
- * Interrupt handler which is used to schedule and switch between the tasks.
+ * \fn os_switch_context_int_handler
+ * \brief Context switch for a process.\n
+ * Interrupt handler which is used to schedule and switch between the processes.
  */
 
 /*!
@@ -544,21 +493,21 @@ static inline void os_free(os_ptr_t ptr) {
 /*!
  * \brief Load the context of a task into the stack. this is the inital process
  * which will setup the stack before entering in the task function.
- * \param task The task
- * \param task_ptr Pointer of the entry point of the task
+ * \param proc The task
+ * \param proc_ptr Pointer of the entry point of the process
  * \param args Parameters to pass to the task
  * \return true in case of success, false otherwise
  */
-bool os_task_context_load(struct os_task_minimal *task, os_task_ptr_t task_ptr,
+bool os_process_context_load(struct os_process *proc, os_proc_ptr_t proc_ptr,
 		os_ptr_t args);
 
 /*!
  * \brief This function must be called inside the
- * \ref os_task_switch_context_int_handler function in order to switch task
+ * \ref os_switch_context_int_handler function in order to switch task
  * context.
- * \return The context of the new task
+ * \return The context of the new process
  */
-static inline struct os_task_minimal *os_task_switch_context_int_handler_hook(void) {
+static inline struct os_process *os_switch_context_int_handler_hook(void) {
 #if CONFIG_OS_USE_TICK_COUNTER == true
 	extern volatile os_tick_t tick_counter;
 	// Update the tick counter
@@ -569,15 +518,15 @@ static inline struct os_task_minimal *os_task_switch_context_int_handler_hook(vo
 #endif
 	HOOK_OS_TICK();
 	// Task switch context
-	return os_task_scheduler();
+	return os_scheduler();
 }
 
 /*!
  * \brief This function must be called inside the
- * \ref os_task_switch_context function in order to switch task context.
- * \return The context of the new task
+ * \ref os_switch_context function in order to switch process context.
+ * \return The context of the new process
  */
-static inline struct os_task_minimal *os_task_switch_context_hook(void) {
+static inline struct os_process *os_switch_context_hook(void) {
 #ifdef OS_SCHEDULER_POST_INTERRUPT_HOOK
 	// Clear the software interrupt if needed
 	OS_SCHEDULER_POST_INTERRUPT_HOOK();
@@ -587,7 +536,7 @@ static inline struct os_task_minimal *os_task_switch_context_hook(void) {
 	OS_SCHEDULER_POST_EVENT_HOOK();
 #endif
 	// Task switch context
-	return os_task_scheduler();
+	return os_scheduler();
 }
 
 /*!
@@ -600,45 +549,45 @@ static inline struct os_task_minimal *os_task_switch_context_hook(void) {
  * \brief Internal API. These functions should not be used by the user.
  * \{
  */
-/*! \brief Test if the current running task is the application task.
- * \return true if the task is the application task, false otherwise.
+/*! \brief Test if the current running process is the application process.
+ * \return true if the current process is the application process, false otherwise.
  */
-static inline bool __os_task_is_application(void) {
-	extern struct os_task_minimal os_app;
-	extern struct os_task_minimal *os_current_task;
-	return (os_current_task == &os_app);
+static inline bool __os_process_is_application(void) {
+	extern struct os_process os_app;
+	extern struct os_process *os_current_process;
+	return (os_current_process == &os_app);
 }
-/*! \brief Get the application task
- * \return the application task
+/*! \brief Get the application process
+ * \return the application process
  */
-static inline struct os_task_minimal *__os_task_get_application(void) {
-	extern struct os_task_minimal os_app;
+static inline struct os_process *__os_process_get_application(void) {
+	extern struct os_process os_app;
 	return &os_app;
 }
-/*! \brief Enable the application task
+/*! \brief Enable the application process
  */
-static inline void __os_task_enable_application(void) {
-	extern struct os_task_minimal os_app;
-	os_task_enable((struct os_task *) &os_app);
+static inline void __os_process_enable_application(void) {
+	extern struct os_process os_app;
+	os_process_enable((struct os_process *) &os_app);
 }
-/*! \brief Disable the application task
+/*! \brief Disable the application process
  */
-static inline void __os_task_disable_application(void) {
-	extern struct os_task_minimal os_app;
-	os_task_disable((struct os_task *) &os_app);
+static inline void __os_process_disable_application(void) {
+	extern struct os_process os_app;
+	os_process_disable((struct os_process *) &os_app);
 }
-/*! \copydoc os_task_enable
+/*! \copydoc os_process_enable
  * This function will push the task at the end of the chain list
  * \warning This function does not check if the task is already added to the
  * list and should be used inside a critical area.
  */
-void __os_task_enable(struct os_task_minimal *task);
-/*! \copydoc os_task_disable
+void __os_process_enable(struct os_process *proc);
+/*! \copydoc os_process_disable
  * \warning This function does not check if the task is already disabled and
  * should be used inside a critical area. It also does not stop after the
  * execution of this function.
  */
-void __os_task_disable(struct os_task_minimal *task);
+void __os_process_disable(struct os_process *proc);
 /*!
  * \}
  */

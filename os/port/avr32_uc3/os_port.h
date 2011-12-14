@@ -70,7 +70,7 @@ static inline void os_leave_critical(void) {
 	cpu_irq_enable();
 };
 
-#define os_task_switch_context(bypass_context_saving) \
+#define os_switch_context(bypass_context_saving) \
 	do { \
 		__asm__ __volatile__ ( \
 			"mov r8, "ASTRINGZ(bypass_context_saving)"\n\t" \

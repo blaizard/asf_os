@@ -32,10 +32,10 @@ void os_event_create(struct os_event *event,
  * \{
  */
 
-static inline struct os_task_minimal *__os_event_pop_task(struct os_event *event) {
-	struct os_task_minimal *task = event->task;
-	event->task = task->next;
-	return task;
+static inline struct os_process *__os_event_pop_process(struct os_event *event) {
+	struct os_process *proc = event->proc;
+	event->proc = proc->next;
+	return proc;
 }
 
 /*! \note event MUST be in the event list
@@ -55,16 +55,16 @@ static inline void __os_event_pop(struct os_event *event) {
 	}
 }
 
-static inline void __os_event_insert_task_after(struct os_task_minimal *task,
-		struct os_task_minimal *new_task) {
-	new_task->next = task->next;
-	task->next = new_task;
+static inline void __os_event_insert_process_after(struct os_process *proc,
+		struct os_process *new_proc) {
+	new_proc->next = proc->next;
+	proc->next = new_proc;
 }
 
-static inline void __os_event_insert_task_begining(struct os_event *event,
-		struct os_task_minimal *task) {
-	task->next = event->task;
-	event->task = task;
+static inline void __os_event_insert_process_begining(struct os_event *event,
+		struct os_process *proc) {
+	proc->next = event->proc;
+	event->proc = proc;
 }
 
 static inline void __os_event_enable(struct os_event *event) {
@@ -87,47 +87,59 @@ static inline void __os_event_start(struct os_event *event) {
  * \}
  */
 
-bool os_event_sort_fifo(struct os_task_minimal *task1,
-		struct os_task_minimal *task2)
+bool os_event_sort_fifo(struct os_process *proc1,
+		struct os_process *proc2)
 {
 	return true;
 }
 
-bool os_event_sort_lifo(struct os_task_minimal *task1,
-		struct os_task_minimal *task2)
+bool os_event_sort_lifo(struct os_process *proc1,
+		struct os_process *proc2)
 {
 	return false;
 }
 
-void __os_event_register(struct os_event *event, struct os_task_minimal *task)
+#if CONFIG_OS_USE_PRIORITY == true
+bool os_event_sort_priority(struct os_process *proc1,
+		struct os_process *proc2)
+{
+	return (proc1->priority <= proc2->priority);
+}
+#endif
+
+void __os_event_register(struct os_event *event, struct os_process *proc)
 {
 	struct os_event *current_event;
-	struct os_task_minimal *prev_task = NULL;
-	struct os_task_minimal *current_task;
-	bool (*sort_fct)(struct os_task_minimal *, struct os_task_minimal *);
+	struct os_process *prev_proc = NULL;
+	struct os_process *current_proc;
+	bool (*sort_fct)(struct os_process *, struct os_process *);
 
 	// Get the appropriate sorting function
+#if CONFIG_OS_USE_PRIORITY == true
+	sort_fct = os_event_sort_priority;
+#else
 	sort_fct = os_event_sort_fifo;
+#endif
 	if (event->desc.sort) {
 		sort_fct = event->desc.sort;
 	}
 
-	// Enable the application task if not done already, before messing up
-	// with the task context
-	__os_task_enable_application();
+	// Enable the application process if not done already, before messing up
+	// with the process context
+	__os_process_enable_application();
 
-	// Add the task to the event sorted task list
-	current_task = event->task;
-	while (current_task && sort_fct(current_task, task)) {
-		prev_task = current_task;
-		current_task = current_task->next;
+	// Add the process to the event sorted process list
+	current_proc = event->proc;
+	while (current_proc && sort_fct(current_proc, proc)) {
+		prev_proc = current_proc;
+		current_proc = current_proc->next;
 	}
-	// If the task is supposed to be at the beginning of the list
-	if (prev_task) {
-		__os_event_insert_task_after(prev_task, task);
+	// If the process is supposed to be at the beginning of the list
+	if (prev_proc) {
+		__os_event_insert_process_after(prev_proc, proc);
 	}
 	else {
-		__os_event_insert_task_begining(event, task);
+		__os_event_insert_process_begining(event, proc);
 	}
 
 	// Add this event to the event list if not done already
@@ -148,13 +160,13 @@ bool os_event_scheduler(void)
 {
 	// Current event to process
 	struct os_event *event = os_current_event;
-	struct os_task_minimal *task;
+	struct os_process *proc;
 	enum os_event_status status;
 
 	// If no event, return
 	if (!event) {
-		// Disable the application task
-		__os_task_disable_application();
+		// Disable the application process
+		__os_process_disable_application();
 		return false;
 	}
 
@@ -162,20 +174,20 @@ bool os_event_scheduler(void)
 	do {
 		do {
 			// Check if the event has been triggered
-			status = event->desc.is_triggered((os_ptr_t) event->args);
-			// >= to make sure the compiler will optimize it
-			if (status >= OS_EVENT_OK_STOP) {
+			status = event->desc.is_triggered(event->proc,
+					(os_ptr_t) event->args);
+			if (status != OS_EVENT_NONE) {
 				os_enter_critical();
-				// Remove the task from the event list
-				task = __os_event_pop_task(event);
-				// If this is the last task, remove the event
+				// Remove the process from the event list
+				proc = __os_event_pop_process(event);
+				// If this is the last process, remove the event
 				// from the list
-				if (!task->next) {
+				if (!proc->next) {
 					status = OS_EVENT_OK_STOP;
 					__os_event_pop(event);
 				}
-				// Activate the task/interrupt
-				__os_task_enable(task);
+				// Activate the process
+				__os_process_enable(proc);
 				os_leave_critical();
 			}
 		} while (status == OS_EVENT_OK_CONTINUE);
@@ -187,15 +199,41 @@ bool os_event_scheduler(void)
 	return true;
 }
 
-void os_event_create_from_function(struct os_event *event, bool (*trigger)(os_ptr_t))
+struct __os_event_custom_function_args {
+	bool (*trigger)(os_ptr_t);
+	os_ptr_t args;
+};
+
+enum os_event_status __os_event_custom_function_handler(struct os_process *proc,
+		os_ptr_t args);
+enum os_event_status __os_event_custom_function_handler(struct os_process *proc,
+		os_ptr_t args)
 {
+	struct __os_event_custom_function_args *custom_args =
+			(struct __os_event_custom_function_args *) args;
+	if (custom_args->trigger(custom_args->args))
+		return OS_EVENT_OK_CONTINUE;
+	return OS_EVENT_NONE;
+}
+
+void os_event_create_from_function(struct os_event *event,
+		bool (*trigger)(os_ptr_t), os_ptr_t args)
+{
+	const struct os_event_descriptor descriptor = {
+		.is_triggered = __os_event_custom_function_handler
+	};
+	struct __os_event_custom_function_args custom_args = {
+		.trigger = trigger,
+		.args = args
+	};
+	os_event_create(event, &descriptor, (os_ptr_t) &custom_args);
 }
 
 /*!
  * Task API Extension
  * \{
  */
-struct os_task_minimal os_event_alternate_task = {
+struct os_process os_event_alternate_proc = {
 	.next = NULL
 };
 
@@ -204,14 +242,14 @@ void os_interrupt_sleep(struct os_interrupt *interrupt, struct os_event *event)
 {
 	os_enter_critical();
 	__os_event_start(event);
-	__os_event_register(event, (struct os_task_minimal *) interrupt);
+	__os_event_register(event, (struct os_process *) interrupt);
 	os_leave_critical();
 }
 #endif
 
 void os_task_sleep(struct os_task *task, struct os_event *event)
 {
-	extern struct os_task_minimal *os_current_task;
+	extern struct os_process *os_current_process;
 
 	// Start the event
 	__os_event_start(event);
@@ -219,15 +257,15 @@ void os_task_sleep(struct os_task *task, struct os_event *event)
 	os_enter_critical();
 	// If the task is enabled, send it to sleep
 	if (os_task_is_enabled(task)) {
-		__os_task_disable(&task->core);
+		__os_process_disable(os_task_get_process(task));
 	}
 	// Save the next current task pointer because it will be erase by the
 	// sleep operation
-	os_event_alternate_task.next = os_current_task->next;
+	os_event_alternate_proc.next = os_current_process->next;
 	// Associate the task with its event and start it
-	__os_event_register(event, (struct os_task_minimal *) task);
+	__os_event_register(event, os_task_get_process(task));
 	// Call the scheduler
-	os_task_switch_context(false);
+	os_switch_context(false);
 	os_leave_critical();
 }
 /*!
