@@ -5,9 +5,9 @@
  * \date 2011
  *
  * \section eeos_license License
- * \ref eeos is provided in source form for FREE evaluation, for
- * educational use or for peaceful research. If you plan on using \ref eeos in a
- * commercial product you need to contact the author to properly license
+ * \ref group_os is provided in source form for FREE evaluation, for
+ * educational use or for peaceful research. If you plan on using \ref group_os
+ * in a commercial product you need to contact the author to properly license
  * its use in your product. The fact that the  source is provided does
  * NOT mean that you can use it without paying a licensing fee.
  */
@@ -17,7 +17,7 @@
 /*! \name Private functions
  * \{
  */
-static enum os_event_status os_event_sempahore_is_triggered(void *args);
+static enum os_event_status os_event_sempahore_is_triggered(os_ptr_t args);
 #if CONFIG_OS_USE_PRIORITY == true
 static bool os_event_semaphore_priority_sort(struct os_task_minimal *task1,
 		struct os_task_minimal *task2);
@@ -44,7 +44,7 @@ const struct os_event_descriptor semaphore_event_descriptor = {
  * \return OS_EVENT_NONE if no ressource is available. OS_EVENT_OK_STOP if
  * only 1 is available, OS_EVENT_OK_CONTINUE if more than one.
  */
-static enum os_event_status os_event_sempahore_is_triggered(void *args)
+static enum os_event_status os_event_sempahore_is_triggered(os_ptr_t args)
 {
 	enum os_event_status status = OS_EVENT_NONE;
 	struct os_semaphore *sem = (struct os_semaphore *) args;

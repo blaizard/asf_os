@@ -5,9 +5,9 @@
  * \date 2011
  *
  * \section eeos_license License
- * \ref eeos is provided in source form for FREE evaluation, for
- * educational use or for peaceful research. If you plan on using \ref eeos in a
- * commercial product you need to contact the author to properly license
+ * \ref group_os is provided in source form for FREE evaluation, for
+ * educational use or for peaceful research. If you plan on using \ref group_os
+ * in a commercial product you need to contact the author to properly license
  * its use in your product. The fact that the  source is provided does
  * NOT mean that you can use it without paying a licensing fee.
  */
@@ -68,12 +68,12 @@ struct os_event_descriptor {
 	 * the call of this function.
 	 * \param args Argument passed to the event during its creation
 	 */
-	void (*start)(void *args);
+	void (*start)(os_ptr_t args);
 	/*! \brief Check the status of an event
 	 * \param args Argument passed to the event during its creation
 	 * \return The current event status (\ref os_event_status)
 	 */
-	enum os_event_status (*is_triggered)(void *args);
+	enum os_event_status (*is_triggered)(os_ptr_t args);
 };
 
 /*! \brief Event control
@@ -109,7 +109,7 @@ struct os_event {
 	struct os_event *next;
 	/*! \brief Extra arguments used to define this event.
 	 */
-	void *args;
+	os_ptr_t args;
 };
 
 /*!
@@ -162,7 +162,7 @@ static inline bool os_event_scheduler(void) {
  * \param args Argument which will be passed to the event descriptor functions.
  */
 void os_event_create(struct os_event *event,
-		const struct os_event_descriptor *descriptor, void *args);
+		const struct os_event_descriptor *descriptor, os_ptr_t args);
 
 /*! \brief Associate a task with an event and enable the event
  * \ingroup group_os_internal_api

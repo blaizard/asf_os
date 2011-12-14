@@ -5,9 +5,9 @@
  * \date 2011
  *
  * \section eeos_license License
- * \ref eeos is provided in source form for FREE evaluation, for
- * educational use or for peaceful research. If you plan on using \ref eeos in a
- * commercial product you need to contact the author to properly license
+ * \ref group_os is provided in source form for FREE evaluation, for
+ * educational use or for peaceful research. If you plan on using \ref group_os
+ * in a commercial product you need to contact the author to properly license
  * its use in your product. The fact that the  source is provided does
  * NOT mean that you can use it without paying a licensing fee.
  */
@@ -18,7 +18,7 @@
 
 bool os_interrupt_flag = false;
 
-void __os_interrupt_handler(void *args)
+void __os_interrupt_handler(os_ptr_t args)
 {
 	struct os_interrupt *interrupt = (struct os_interrupt *) args;
 
@@ -32,8 +32,8 @@ void __os_interrupt_handler(void *args)
 	os_task_switch_context(true);
 }
 
-void os_interrupt_setup(struct os_interrupt *interrupt, task_ptr_t task_ptr,
-		void *args)
+void os_interrupt_setup(struct os_interrupt *interrupt, os_task_ptr_t task_ptr,
+		os_ptr_t args)
 {
 	// Fill the structure
 	interrupt->task_ptr = task_ptr;

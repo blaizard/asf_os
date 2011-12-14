@@ -5,9 +5,9 @@
  * \date 2011
  *
  * \section eeos_license License
- * \ref eeos is provided in source form for FREE evaluation, for
- * educational use or for peaceful research. If you plan on using \ref eeos in a
- * commercial product you need to contact the author to properly license
+ * \ref group_os is provided in source form for FREE evaluation, for
+ * educational use or for peaceful research. If you plan on using \ref group_os
+ * in a commercial product you need to contact the author to properly license
  * its use in your product. The fact that the  source is provided does
  * NOT mean that you can use it without paying a licensing fee.
  */
@@ -64,7 +64,7 @@ static inline void os_binary_semaphore_create(struct os_semaphore *sem) {
 static inline void os_semaphore_create_event(struct os_event *event,
 		struct os_semaphore *sem) {
 	extern const struct os_event_descriptor semaphore_event_descriptor;
-	os_event_create(event, &semaphore_event_descriptor, (void *) sem);
+	os_event_create(event, &semaphore_event_descriptor, (os_ptr_t) sem);
 }
 
 /*! \brief Take a semaphore. If no semaphore is available, wait until it gets

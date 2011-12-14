@@ -5,9 +5,9 @@
  * \date 2011
  *
  * \section eeos_license License
- * \ref eeos is provided in source form for FREE evaluation, for
- * educational use or for peaceful research. If you plan on using \ref eeos in a
- * commercial product you need to contact the author to properly license
+ * \ref group_os is provided in source form for FREE evaluation, for
+ * educational use or for peaceful research. If you plan on using \ref group_os
+ * in a commercial product you need to contact the author to properly license
  * its use in your product. The fact that the  source is provided does
  * NOT mean that you can use it without paying a licensing fee.
  */
@@ -18,7 +18,21 @@
 
 static struct os_event *os_current_event = NULL;
 
-static inline struct os_task_minimal *os_event_pop_task(struct os_event *event) {
+void os_event_create(struct os_event *event,
+		const struct os_event_descriptor *descriptor, os_ptr_t args)
+{
+	// Fill the event structure
+	event->desc.sort = descriptor->sort;
+	event->desc.start = descriptor->start;
+	event->desc.is_triggered = descriptor->is_triggered;
+	event->args = args;
+}
+
+/*! Private helper functions
+ * \{
+ */
+
+static inline struct os_task_minimal *__os_event_pop_task(struct os_event *event) {
 	struct os_task_minimal *task = event->task;
 	event->task = task->next;
 	return task;
@@ -26,7 +40,7 @@ static inline struct os_task_minimal *os_event_pop_task(struct os_event *event) 
 
 /*! \note event MUST be in the event list
  */
-static inline void os_event_pop(struct os_event *event) {
+static inline void __os_event_pop(struct os_event *event) {
 	struct os_event *prev_event = os_current_event;
 	// If the event is the 1rst one
 	if (event == os_current_event) {
@@ -39,16 +53,6 @@ static inline void os_event_pop(struct os_event *event) {
 		}
 		prev_event->next = event->next;
 	}
-}
-
-void os_event_create(struct os_event *event,
-		const struct os_event_descriptor *descriptor, void *args)
-{
-	// Fill the event structure
-	event->desc.sort = descriptor->sort;
-	event->desc.start = descriptor->start;
-	event->desc.is_triggered = descriptor->is_triggered;
-	event->args = args;
 }
 
 static inline void __os_event_insert_task_after(struct os_task_minimal *task,
@@ -78,6 +82,10 @@ static inline void __os_event_start(struct os_event *event) {
 		event->desc.start(event->args);
 	}
 }
+
+/*!
+ * \}
+ */
 
 bool os_event_sort_fifo(struct os_task_minimal *task1,
 		struct os_task_minimal *task2)
@@ -114,6 +122,7 @@ void __os_event_register(struct os_event *event, struct os_task_minimal *task)
 		prev_task = current_task;
 		current_task = current_task->next;
 	}
+	// If the task is supposed to be at the beginning of the list
 	if (prev_task) {
 		__os_event_insert_task_after(prev_task, task);
 	}
@@ -153,17 +162,17 @@ bool os_event_scheduler(void)
 	do {
 		do {
 			// Check if the event has been triggered
-			status = event->desc.is_triggered((void *) event->args);
+			status = event->desc.is_triggered((os_ptr_t) event->args);
 			// >= to make sure the compiler will optimize it
 			if (status >= OS_EVENT_OK_STOP) {
 				os_enter_critical();
 				// Remove the task from the event list
-				task = os_event_pop_task(event);
+				task = __os_event_pop_task(event);
 				// If this is the last task, remove the event
 				// from the list
 				if (!task->next) {
 					status = OS_EVENT_OK_STOP;
-					os_event_pop(event);
+					__os_event_pop(event);
 				}
 				// Activate the task/interrupt
 				__os_task_enable(task);
@@ -178,7 +187,7 @@ bool os_event_scheduler(void)
 	return true;
 }
 
-void os_event_create_from_function(struct os_event *event, bool (*trigger)(void *))
+void os_event_create_from_function(struct os_event *event, bool (*trigger)(os_ptr_t))
 {
 }
 

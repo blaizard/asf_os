@@ -5,9 +5,9 @@
  * \date 2011
  *
  * \section eeos_license License
- * \ref eeos is provided in source form for FREE evaluation, for
- * educational use or for peaceful research. If you plan on using \ref eeos in a
- * commercial product you need to contact the author to properly license
+ * \ref group_os is provided in source form for FREE evaluation, for
+ * educational use or for peaceful research. If you plan on using \ref group_os
+ * in a commercial product you need to contact the author to properly license
  * its use in your product. The fact that the  source is provided does
  * NOT mean that you can use it without paying a licensing fee.
  */
@@ -18,7 +18,7 @@
 #include "os_port.h"
 #include "conf_os.h"
 
-/*! \defgroup eeos eeOS
+/*! \defgroup group_os eeOS
  * \brief eeOS is a Embedded Event-driven Operating System.
  * This page contains all the documentation related to this operating
  * system (\ref OS_VERSION).
@@ -148,6 +148,13 @@
 	#define CONFIG_OS_TASK_DEFAULT_PRIORITY OS_PRIORITY_1
 #endif
 
+/*! \def CONFIG_OS_USE_STATISTICS
+ * \brief Defines if statistics should be enabled
+ */
+#ifndef CONFIG_OS_USE_STATISTICS
+	#define CONFIG_OS_USE_STATISTICS false
+#endif
+
 /*!
  * \}
  */
@@ -233,7 +240,7 @@ struct os_task_minimal {
 	/*! \brief Stack pointer. Will always be the 1rst element of this structure,
 	 * to ensure the best optimization.
 	 */
-	void *sp;
+	os_ptr_t sp;
 	/*! \brief Pointer of the next task in the list.
 	 * Active tasks are registered within a chain list.
 	 */
@@ -265,7 +272,7 @@ struct os_task {
 /*! \brief Task function prototype
  * \param args Arguments passed to the task in a form of an empty pointer
  */
-typedef void (*task_ptr_t)(void *args);
+typedef void (*os_task_ptr_t)(os_ptr_t args);
 
 /*! \brief This function will define the rules to change the task.
  * \return The new task context
@@ -282,7 +289,7 @@ struct os_task_minimal *os_task_scheduler(void);
  * manually allocate some memory for the stack.
  * Here is an example code to use this macro:
  * \code
- * void my_func(void *args)
+ * void my_func(os_ptr_t args)
  * {
  *	...
  * }
@@ -334,7 +341,7 @@ struct os_task_minimal *os_task_scheduler(void);
  * \param options Specific options for the task (see \ref os_task_option)
  * \return true if the task has been correctly registered, false otherwise.
  */
-bool os_task_create(struct os_task *task, task_ptr_t task_ptr, void *args,
+bool os_task_create(struct os_task *task, os_task_ptr_t task_ptr, os_ptr_t args,
 		int stack_size, enum os_task_option options);
 
 /*! \brief Delete a task
@@ -461,7 +468,7 @@ static inline void os_start(uint32_t ref_hz) {
 /*! \brief Get the current version of the running operating system
  * \return A string containing the version of the OS.
  */
-static inline uint8_t *os_get_version(void) {
+static inline char *os_get_version(void) {
 	return OS_VERSION;
 }
 /*!
@@ -512,25 +519,25 @@ void os_setup_scheduler(uint32_t ref_hz);
  */
 
 /*!
- * \fn void *os_malloc(int stack_size)
+ * \fn os_ptr_t os_malloc(int stack_size)
  * \brief Allocate some memory for the stack of a task
  * \param stack_size The size in byte of the stack
  * \return The pointer of the memory allocated, NULL in case of an error.
  */
 #if CONFIG_OS_USE_CUSTOM_MALLOC == false
-static inline void *os_malloc(int stack_size) {
-	return malloc(stack_size);
+static inline os_ptr_t os_malloc(int stack_size) {
+	return (os_ptr_t) malloc(stack_size);
 }
 #endif
 
 /*!
- * \fn void os_free(void *ptr)
+ * \fn void os_free(os_ptr_t ptr)
  * \brief Free memory previously allocated by \ref os_malloc
  * \param ptr The memory to free
  */
 #if CONFIG_OS_USE_CUSTOM_MALLOC == false
-static inline void os_free(void *ptr) {
-	free(ptr);
+static inline void os_free(os_ptr_t ptr) {
+	free((void *) ptr);
 }
 #endif
 
@@ -542,8 +549,8 @@ static inline void os_free(void *ptr) {
  * \param args Parameters to pass to the task
  * \return true in case of success, false otherwise
  */
-bool os_task_context_load(struct os_task_minimal *task, task_ptr_t task_ptr,
-		void *args);
+bool os_task_context_load(struct os_task_minimal *task, os_task_ptr_t task_ptr,
+		os_ptr_t args);
 
 /*!
  * \brief This function must be called inside the
@@ -557,7 +564,7 @@ static inline struct os_task_minimal *os_task_switch_context_int_handler_hook(vo
 	// Update the tick counter
 	tick_counter++;
 #endif
-#if CONFIG_OS_DEBUG
+#if CONFIG_OS_DEBUG == true
 	HOOK_OS_DEBUG_TICK();
 #endif
 	HOOK_OS_TICK();

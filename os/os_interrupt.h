@@ -5,9 +5,9 @@
  * \date 2011
  *
  * \section eeos_license License
- * \ref eeos is provided in source form for FREE evaluation, for
- * educational use or for peaceful research. If you plan on using \ref eeos in a
- * commercial product you need to contact the author to properly license
+ * \ref group_os is provided in source form for FREE evaluation, for
+ * educational use or for peaceful research. If you plan on using \ref group_os
+ * in a commercial product you need to contact the author to properly license
  * its use in your product. The fact that the  source is provided does
  * NOT mean that you can use it without paying a licensing fee.
  */
@@ -23,10 +23,10 @@ struct os_interrupt {
 	struct os_task_minimal core;
 	/*! \brief Pointer in the interrupt handler
 	 */
-	task_ptr_t task_ptr;
+	os_task_ptr_t task_ptr;
 	/*! \brief Arguments to pass to the interrupt handler
 	 */
-	void *args;
+	os_ptr_t args;
 };
 
 /*! \ingroup group_os_config
@@ -71,11 +71,11 @@ struct os_interrupt {
  * \param interrupt The non-initialized structure to hold the context of the
  * software interrupt
  * \param task_ptr A pointer on the interrupt handler (a interrupt handler is a
- * normal function which follow the \ref task_ptr_t prototype)
+ * normal function which follow the \ref os_task_ptr_t prototype)
  * \param args Arguments to pass to the inerrupt handler
  */
-void os_interrupt_setup(struct os_interrupt *interrupt, task_ptr_t task_ptr,
-		void *args);
+void os_interrupt_setup(struct os_interrupt *interrupt, os_task_ptr_t task_ptr,
+		os_ptr_t args);
 
 /*! \brief Manually trigger a software interrupt.
  * \ingroup group_os_public_api
@@ -130,7 +130,7 @@ void os_interrupt_sleep(struct os_interrupt *interrupt, struct os_event *event);
  * \ingroup group_os_internal_api
  * \param args A pointer on a \ref os_interrupt structure
  */
-void __os_interrupt_handler(void *args);
+void __os_interrupt_handler(os_ptr_t args);
 
 /*! \brief Test if the current running task is an interrupt.
  * \ingroup group_os_internal_api
@@ -155,7 +155,7 @@ static inline bool __os_task_is_interrupt(void) {
 			os_current_task->sp = os_app.sp; \
 			os_task_context_load(os_current_task, \
 					__os_interrupt_handler, \
-					(void *) os_current_task); \
+					(os_ptr_t) os_current_task); \
 		} while (false)
 
 	#define OS_SCHEDULER_POST_INTERRUPT_HOOK() \

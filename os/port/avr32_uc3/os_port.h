@@ -5,9 +5,9 @@
  * \date 2011
  *
  * \section eeos_license License
- * \ref eeos is provided in source form for FREE evaluation, for
- * educational use or for peaceful research. If you plan on using \ref eeos in a
- * commercial product you need to contact the author to properly license
+ * \ref group_os is provided in source form for FREE evaluation, for
+ * educational use or for peaceful research. If you plan on using \ref group_os
+ * in a commercial product you need to contact the author to properly license
  * its use in your product. The fact that the  source is provided does
  * NOT mean that you can use it without paying a licensing fee.
  */
@@ -78,7 +78,8 @@ static inline void os_leave_critical(void) {
 		); \
 	} while (false)
 
-
+#define OS_COMPILER_ALIGN 2
+typedef void * os_ptr_t;
 typedef uint32_t os_reg_t;
 typedef uint32_t os_cy_t;
 
@@ -86,6 +87,18 @@ typedef uint32_t os_cy_t;
  */
 static inline os_cy_t os_read_cycle_counter(void) {
 	return Get_system_register(AVR32_COUNT);
+}
+
+/*! Get the entry point of the memory allocated for the application stack.
+ */
+static inline os_ptr_t os_get_app_stack(void) {
+#if __GNUC__
+	extern uint32_t _stack;
+	return (os_ptr_t) _stack;
+#elif __ICCAVR32__
+	#pragma segment="SSTACK" __data21
+	return (os_ptr_t) __segment_begin("SSTACK");
+#endif
 }
 
 #endif // __OS_PORT_H__

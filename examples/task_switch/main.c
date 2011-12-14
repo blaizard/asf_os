@@ -17,7 +17,7 @@ struct task_args {
 };
 
 void task2(void *args);
-
+void led_on();
 void led_blink(void *raw_args)
 {
 	struct task_args *args = (struct task_args *) raw_args;
@@ -40,6 +40,11 @@ void task2(void *args)
 		task_switch = os_statistics_get_task_switch();
 		jitter = os_statistics_get_task_switch_jitter();
 	}
+}
+
+void led_on()
+{
+	gpio_clr_gpio_pin(LED3_GPIO);
 }
 
 int main(void)
@@ -71,10 +76,10 @@ int main(void)
 	os_task_create(&task_1, led_blink, &args_1, 500, OS_TASK_DEFAULT);
 	os_task_create(&task_2, led_blink, &args_2, 500, OS_TASK_DEFAULT);
 	os_task_create(&task_3, led_blink, &args_3, 500, OS_TASK_DEFAULT);
-	//os_task_create(&task_4, led_blink, &args_4, 500, OS_TASK_DEFAULT);
-	os_task_create(&task_4, task2, NULL, 500, OS_TASK_DEFAULT);
+	os_task_create(&task_4, led_blink, &args_4, 500, OS_TASK_DEFAULT);
+	//os_task_create(&task_4, task2, NULL, 500, OS_TASK_DEFAULT);
 
-	//os_task_set_priority(&task_2, OS_PRIORITY_3);
+	os_task_set_priority(&task_2, OS_PRIORITY_1);
 
 	os_start(CPU_HZ);
 }
