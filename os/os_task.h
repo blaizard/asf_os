@@ -1,6 +1,35 @@
 #ifndef __OS_TASK_H__
 #define __OS_TASK_H__
 
+enum os_task_option {
+	/*! \brief Default options
+	 */
+	OS_TASK_DEFAULT = 0,
+	/*! \brief Disable the task before its execution.\n
+	 * It can be enable at any time using \ref os_task_enable
+	 */
+	OS_TASK_DISABLE = 1,
+	/*! \brief Use a custom stack for this task. The user must previously allocate
+	 * memory for \ref os_task::stack. This option is available only if
+	 * \ref CONFIG_OS_USE_MALLOC is set.
+	 */
+	OS_TASK_USE_CUSTOM_STACK = 2,
+};
+
+/*! Structure holding the context of a task
+ */
+struct os_task {
+	/*! \brief Minimal context
+	 */
+	struct os_process core;
+	/*! \brief A pointer on a memory space reserved for the stack
+	 */
+	uint8_t *stack;
+	/*! \brief Task options
+	 */
+	enum os_task_option options;
+};
+
 /*! \name Tasks
  *
  * Set of functions to manage a task
@@ -41,7 +70,7 @@ void os_task_delay(os_tick_t tick_nb);
  * \return The task pointer
  */
 static inline struct os_task *os_task_from_process(struct os_process *proc) {
-	return (struct os_task *) proc;
+	return container_of(proc, struct os_task, core);
 }
 
 /*! \brief Get the task process
@@ -50,7 +79,7 @@ static inline struct os_task *os_task_from_process(struct os_process *proc) {
  * \return The process of the task
  */
 static inline struct os_process *os_task_get_process(struct os_task *task) {
-	return (struct os_process *) task;
+	return &task->core;
 }
 
 #if CONFIG_OS_USE_PRIORITY == true

@@ -16,8 +16,6 @@
 
 #if CONFIG_OS_USE_SW_INTERRUPTS == true
 
-bool os_interrupt_flag = false;
-
 void __os_interrupt_handler(os_ptr_t args)
 {
 	struct os_interrupt *interrupt = (struct os_interrupt *) args;
@@ -25,7 +23,7 @@ void __os_interrupt_handler(os_ptr_t args)
 	// Disable scheduler interrupts
 	os_enter_critical();
 	// Remove the interrupt from the chain list to prevent another execution
-	__os_process_disable((struct os_process *) interrupt);
+	__os_process_disable(os_interrupt_get_process(interrupt));
 	// Execute the interrupt handler
 	interrupt->int_ptr(interrupt->args);
 	// Manually call the scheduler
@@ -39,7 +37,9 @@ void os_interrupt_setup(struct os_interrupt *interrupt, os_proc_ptr_t int_ptr,
 	interrupt->int_ptr = int_ptr;
 	interrupt->args = args;
 	// Setup the task to run in the application context
-	interrupt->core.sp = NULL;
+	os_interrupt_get_process(interrupt)->sp = NULL;
+	// Set process type
+	os_interrupt_get_process(interrupt)->type = OS_PROCESS_TYPE_INTERRUPT;
 #if CONFIG_OS_USE_PRIORITY == true
 	// Set default priority to the interrupt
 	os_interrupt_set_priority(interrupt, CONFIG_OS_INTERRUPT_DEFAULT_PRIORITY);

@@ -51,7 +51,9 @@ bool os_task_create(struct os_task *task, os_proc_ptr_t task_ptr, os_ptr_t args,
 	// Save the options
 	task->options = options;
 	// Move the SP pointer to the end of the stack
-	task->core.sp = &task->stack[stack_size];
+	os_task_get_process(task)->sp = &task->stack[stack_size];
+	// Set process type
+	os_task_get_process(task)->type = OS_PROCESS_TYPE_TASK;
 #if CONFIG_OS_USE_PRIORITY == true
 	os_task_set_priority(task, CONFIG_OS_TASK_DEFAULT_PRIORITY);
 #endif
@@ -60,7 +62,6 @@ bool os_task_create(struct os_task *task, os_proc_ptr_t task_ptr, os_ptr_t args,
 		return false;
 	}
 	// Enable the task
-	task->core.next = NULL;
 	if (!(options & OS_TASK_DISABLE)) {
 		os_task_enable(task);
 	}
@@ -75,5 +76,5 @@ struct os_task *os_task_get_current(void)
 	if (os_current_process == &os_app) {
 		return NULL;
 	}
-	return (struct os_task *) os_current_process;
+	return os_task_from_process(os_current_process);
 }

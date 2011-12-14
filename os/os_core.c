@@ -30,6 +30,7 @@
  */
 struct os_process os_app = {
 	.next = &os_app,
+	.type = OS_PROCESS_TYPE_APPLICATION,
 #if CONFIG_OS_USE_PRIORITY == true
 	.priority = OS_PRIORITY_1,
 	.priority_counter = OS_PRIORITY_1,

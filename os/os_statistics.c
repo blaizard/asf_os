@@ -59,4 +59,30 @@ os_cy_t os_statistics_get_task_switch_time(void)
 
 #endif // CONFIG_OS_STATISTICS_TASK_SWITCHING == true
 
+/*!
+ * The ratio of the CPU ressources is calculated as follow:
+ * \code ratio = (100 / (priority level)) / SUM(100 / (each priority level)) \endcode
+ */
+uint8_t os_statistics_task_cpu_allocation(struct os_task *task)
+{
+	struct os_process *proc = os_task_get_process(task);
+	struct os_process *last_proc = proc->next;
+	uint8_t priority = 100 / os_process_get_priority(proc);
+	uint16_t sum = priority;
+
+	// Loop into the task list
+	while (last_proc != proc) {
+		if (os_process_is_task(last_proc)) {
+#if CONFIG_OS_USE_PRIORITY == true
+			sum += 100 / os_process_get_priority(last_proc);
+#else
+			sum += 100;
+#endif
+		}
+		last_proc = last_proc->next;
+	}
+
+	return (uint8_t) (((uint16_t) priority * 100) / sum);
+}
+
 #endif // CONFIG_OS_USE_STATISTICS == true

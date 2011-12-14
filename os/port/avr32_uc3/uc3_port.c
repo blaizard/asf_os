@@ -201,7 +201,6 @@ __exception void _os_switch_context(void)
 #endif
 {
 	extern struct os_process *os_current_process;
-	extern bool os_interrupt_flag;
 
 	__asm__ __volatile__ (
 #if CONFIG_OS_USE_SW_INTERRUPTS == true

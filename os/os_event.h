@@ -82,18 +82,20 @@ struct os_event_descriptor {
 	enum os_event_status (*is_triggered)(struct os_process *proc, os_ptr_t args);
 };
 
-/*! \brief Event control
- * Events are used to wake up a process or call an interrupt so an event
- * is always associated to a process.
+/*! \addtogroup group_os
+ * \section section_os_event Events
+ *
+ * Events (\ref os_event) are used to wake up or call one or multiple processes.
  * When a process is sleeping it will be removed from the active process list,
  * therefore the performance will not be decreased.
  *
- * Events are stored in a chain list as follow, where \i E are events and \i T
+ * Events are stored in a chain list as follow, where \i E are events and \i P
  * are processes:
  * \code
- * E1 -> E2 -> E3 -> NULL
- * T1    T6    T3
- *       T7
+ *  E1 -> E2 -> E3 -> NULL
+ *  P1    P6    P3
+ * NULL   P7   NULL
+ *       NULL
  * \endcode
  * When an event has no process, it is removed from the active event list.
  */

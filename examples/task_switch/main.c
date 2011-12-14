@@ -49,7 +49,7 @@ void led_on()
 	gpio_clr_gpio_pin(LED3_GPIO);
 }
 
-int main(void)
+__os_event_is_triggeredint main(void)
 {
 	struct task_args args_1 = {
 		.delay_ms = 100,

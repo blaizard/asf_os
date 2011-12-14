@@ -77,29 +77,29 @@ struct os_interrupt {
 void os_interrupt_setup(struct os_interrupt *interrupt, os_proc_ptr_t int_ptr,
 		os_ptr_t args);
 
-/*! \brief Manually trigger a software interrupt.
- * \ingroup group_os_public_api
- * \param interrupt The interrupt to trigger
- * \pre The interrupt must be previously setup with \ref os_interrupt_setup
- */
-static inline void os_interrupt_trigger(struct os_interrupt *interrupt) {
-	os_process_enable((struct os_process *) &interrupt->core);
-}
-
 /*! \brief Get the interrupt associated with a process
  * \param proc the process
  * \return The interrupt pointer
  */
 static inline struct os_interrupt *os_interrupt_from_process(struct os_process *proc) {
-	return (struct os_interrupt *) proc;
+	return container_of(proc, struct os_interrupt, core);
 }
 
 /*! \brief Get the interrupt process
  * \param interrupt The interrupt
  * \return The process of the interrupt
  */
-static inline struct os_process *os_interrupt_get_pid(struct os_interrupt *interrupt) {
-	return (struct os_process *) interrupt;
+static inline struct os_process *os_interrupt_get_process(struct os_interrupt *interrupt) {
+	return &interrupt->core;
+}
+
+/*! \brief Manually trigger a software interrupt.
+ * \ingroup group_os_public_api
+ * \param interrupt The interrupt to trigger
+ * \pre The interrupt must be previously setup with \ref os_interrupt_setup
+ */
+static inline void os_interrupt_trigger(struct os_interrupt *interrupt) {
+	os_process_enable(os_interrupt_get_process(interrupt));
 }
 
 #if CONFIG_OS_USE_PRIORITY == true
@@ -110,7 +110,7 @@ static inline struct os_process *os_interrupt_get_pid(struct os_interrupt *inter
  * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
  */
 static inline void os_interrupt_set_priority(struct os_interrupt *interrupt, enum os_priority priority) {
-	os_process_set_priority((struct os_process *) &interrupt->core, priority);
+	os_process_set_priority(os_interrupt_get_process(interrupt), priority);
 }
 /*! \brief Get the priority of a software interrupt
  * \ingroup group_os_public_api
@@ -119,7 +119,7 @@ static inline void os_interrupt_set_priority(struct os_interrupt *interrupt, enu
  * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
  */
 static inline enum os_priority os_interrupt_get_priority(struct os_interrupt *interrupt) {
-	return os_process_get_priority((struct os_process *) &interrupt->core);
+	return os_process_get_priority(os_interrupt_get_process(interrupt));
 }
 #endif
 
@@ -130,7 +130,8 @@ static inline enum os_priority os_interrupt_get_priority(struct os_interrupt *in
  * \param event The event used to trigger the interrupt
  * \pre \ref CONFIG_OS_USE_EVENTS needs to be set
  */
-void os_interrupt_sleep(struct os_interrupt *interrupt, struct os_event *event);
+void os_interrupt_trigger_on_event(struct os_interrupt *interrupt,
+		struct os_event *event);
 #endif
 
 /*!
@@ -148,15 +149,6 @@ void os_interrupt_sleep(struct os_interrupt *interrupt, struct os_event *event);
  */
 void __os_interrupt_handler(os_ptr_t args);
 
-/*! \brief Test if the current running task is an interrupt.
- * \ingroup group_os_internal_api
- * \return true if the task is an interrupt, false otherwise.
- */
-static inline bool __os_task_is_interrupt(void) {
-	extern bool os_interrupt_flag;
-	return os_interrupt_flag;
-}
-
 /*!
  * \}
  */
@@ -164,10 +156,8 @@ static inline bool __os_task_is_interrupt(void) {
 #if CONFIG_OS_USE_SW_INTERRUPTS == true
 	#define OS_SCHEDULER_PRE_INTERRUPT_HOOK() \
 		do { \
-			extern bool os_interrupt_flag; \
 			if (os_current_process->sp) \
 				return os_current_process; \
-			os_interrupt_flag = true; \
 			os_current_process->sp = os_app.sp; \
 			os_process_context_load(os_current_process, \
 					__os_interrupt_handler, \
@@ -176,10 +166,8 @@ static inline bool __os_task_is_interrupt(void) {
 
 	#define OS_SCHEDULER_POST_INTERRUPT_HOOK() \
 		do { \
-			extern bool os_interrupt_flag; \
 			extern struct os_process *os_current_process; \
-			if (os_interrupt_flag) { \
-				os_interrupt_flag = false; \
+			if (os_process_is_interrupt(os_current_process)) { \
 				os_current_process->sp = NULL; \
 			} \
 		} while (false)

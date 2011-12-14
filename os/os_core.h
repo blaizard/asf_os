@@ -35,15 +35,61 @@
  * - Targets:
  *   - MISRA-C compatible
  *
- * All the actives tasks are stored in a chain list.
- * The current task is the task pointed by \ref os_current_process.
- * At the begining, when the task scheduler is not running the current process
- * is not a task so its information need to be storted in a specific context.
- * This context is \ref os_app. Therefore, at the begining the active task chain
- * list looks like this:
- * os_current_process -> os_app -> task1 -> task2 -> task1 -> task2 -> ...
- * During normal execution, os_app is not part of the chain list anymore:
- * os_current_process -> task1 -> task2 -> task1 -> task2 -> ...
+ * \section section_os_core OS Core
+ *
+ * \subsection section_os_process Process
+ *
+ * Tasks (\ref os_task) and software interrupts (os_interrupt) are
+ * sub-categories of processses (\ref os_process). Therefore they will inherit
+ * from all processes features.
+ *
+ * A \b process (\ref os_process) is a instance of a piece of code with its own
+ * context. A process can have a priority execution amongst other processes.
+ * It can be enabled and be part of the active process list or disabled and
+ * be completely removed from the process scheduler.
+ *
+ * A \b task (\ref os_task) is a process which can be interrupted by the process
+ * scheduler at any time. Therefore its execution time is not predictable
+ * without a complete view of the active process list.
+ *
+ * A \b software \b interrupt (\ref os_interrupt) is a process which will not be
+ * interrupted by the process scheduler.
+ *
+ * \subsection section_os_scheduler Scheduler
+ *
+ * All the actives processes are stored in a circular chain list. The operating
+ * system does not keep track of the non-active processes. This to keep the
+ * context of this OS as small as possible.
+ *
+ * The first process to be present in the active process list is the application
+ * process. This process will keep track of the intial context of
+ * the application before the user starts the task scheduling (\ref os_start).
+ * At this point the current process list will look like this:
+ * \code (application context) -> (application context) -> ... \endcode
+ *
+ * When the users creates and enables a new process, it will be added to the
+ * active process list.
+ * \code (process 1) -> (process 1) -> (process 1) -> ... \endcode
+ * 2 new processed will make the active process list look like this:
+ * \code (process 1) -> (process 2) -> (process 1) -> ... \endcode
+ *
+ * After each ticks the scheduler will switch between the different processes
+ * in the list. If all the processes share the same priority level, the
+ * time in each processes will be equal. A process with higher priority will
+ * receive more attention from the scheduler.
+ *
+ * \warning The priority level is assigned by \ref os_priority. The lower number
+ * represents the higher priority.
+ *
+ * If the level of a process is X, it means that the process will be executed
+ * every X iteration. An iteration represents a complete cycle of the circular
+ * active process list.
+ * For example, if there are only 2 processes in the active process list;
+ * Let's say process #1 has a priority level of 1 and process #2 has a priority
+ * level of 2, then process #1 will have 66% of CPU while process #2, 33%.
+ * The active process list can be seen as follow:
+ * \code (process 1) -> (process 1) -> (process 2) -> (process 1) -> (process 1) -> (process 2) -> ... \endcode
+ *
  */
 
 /*! \brief Current version of the operating system.
@@ -196,6 +242,13 @@
  * \}
  */
 
+/*! Helper macro
+ */
+#ifndef container_of
+	#define container_of(ptr, type, member) \
+			((type *)((int8_t *)(ptr) - offsetof(type, member)))
+#endif
+
 #if CONFIG_OS_USE_PRIORITY == true
 /*! Priority of the task.
  * The lower get the most priority
@@ -219,19 +272,10 @@ typedef uint16_t os_tick_t;
 typedef uint32_t os_tick_t;
 #endif
 
-enum os_task_option {
-	/*! \brief Default options
-	 */
-	OS_TASK_DEFAULT = 0,
-	/*! \brief Disable the task before its execution.\n
-	 * It can be enable at any time using \ref os_task_enable
-	 */
-	OS_TASK_DISABLE = 1,
-	/*! \brief Use a custom stack for this task. The user must previously allocate
-	 * memory for \ref os_task::stack. This option is available only if
-	 * \ref CONFIG_OS_USE_MALLOC is set.
-	 */
-	OS_TASK_USE_CUSTOM_STACK = 2,
+enum os_process_type {
+	OS_PROCESS_TYPE_APPLICATION = 0,
+	OS_PROCESS_TYPE_TASK = 1,
+	OS_PROCESS_TYPE_INTERRUPT = 2,
 };
 
 /*! This structure represents a process context
@@ -245,6 +289,9 @@ struct os_process {
 	 * Active processes are registered within a chain list.
 	 */
 	struct os_process *next;
+	/*! \brief The type of the process
+	 */
+	enum os_process_type type;
 #if CONFIG_OS_USE_PRIORITY == true
 	/*! \brief Priority of the process.
 	 */
@@ -253,20 +300,6 @@ struct os_process {
 	 */
 	enum os_priority priority_counter;
 #endif
-};
-
-/*! Structure holding the context of a task
- */
-struct os_task {
-	/*! \brief Minimal context
-	 */
-	struct os_process core;
-	/*! \brief A pointer on a memory space reserved for the stack
-	 */
-	uint8_t *stack;
-	/*! \brief Task options
-	 */
-	enum os_task_option options;
 };
 
 /*! \brief Process function prototype
@@ -389,6 +422,33 @@ void os_process_disable(struct os_process *proc);
  */
 bool os_process_is_enabled(struct os_process *proc);
 
+/*! \brief Check if a process is the application process
+ * \ingroup group_os_public_api
+ * \param proc The process to be checked
+ * \return true if this is the application process, false otherwise
+ */
+static inline bool os_process_is_application(struct os_process *proc) {
+	return (proc->type == OS_PROCESS_TYPE_APPLICATION);
+}
+
+/*! \brief Check if a process is a task
+ * \ingroup group_os_public_api
+ * \param proc The process to be checked
+ * \return true if this is a task, false otherwise
+ */
+static inline bool os_process_is_task(struct os_process *proc) {
+	return (proc->type == OS_PROCESS_TYPE_TASK);
+}
+
+/*! \brief Check if a process is a software
+ * \ingroup group_os_public_api
+ * \param proc The process to be checked
+ * \return true if this is a software interrupt, false otherwise
+ */
+static inline bool os_process_is_interrupt(struct os_process *proc) {
+	return (proc->type == OS_PROCESS_TYPE_INTERRUPT);
+}
+
 #if CONFIG_OS_USE_PRIORITY == true
 /*! \brief Change the priority of a process
  * \ingroup group_os_public_api
@@ -423,7 +483,6 @@ static inline enum os_priority os_process_get_priority(struct os_process *proc) 
 #include "os_semaphore.h"
 #include "os_mutex.h"
 
-
 /*! \defgroup os_port_group Porting functions
  * \brief Functions which should be implemented to port this operating system onto
  * another platform.
@@ -456,7 +515,7 @@ void os_setup_scheduler(uint32_t ref_hz);
  * Function used to schedule and switch between the processes.\n
  * This function will handle the return from a softwre interrupt. Therefore it
  * can be optimized to bypass the saving context part IF an interrupt is
- * running (if \ref os_interrupt_flag is true).
+ * running.
  * \param bypass_context_saving If true, this function needs to bypass the
  * context saving.
  */
@@ -568,13 +627,13 @@ static inline struct os_process *__os_process_get_application(void) {
  */
 static inline void __os_process_enable_application(void) {
 	extern struct os_process os_app;
-	os_process_enable((struct os_process *) &os_app);
+	os_process_enable(&os_app);
 }
 /*! \brief Disable the application process
  */
 static inline void __os_process_disable_application(void) {
 	extern struct os_process os_app;
-	os_process_disable((struct os_process *) &os_app);
+	os_process_disable(&os_app);
 }
 /*! \copydoc os_process_enable
  * This function will push the task at the end of the chain list

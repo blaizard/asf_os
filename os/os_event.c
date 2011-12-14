@@ -83,6 +83,13 @@ static inline void __os_event_start(struct os_event *event) {
 	}
 }
 
+static inline bool __os_event_is_triggered(struct os_event *event) {
+	if (event->desc.is_triggered(os_get_current_process(), event->args)
+			== OS_EVENT_NONE)
+		return false;
+	return true;
+}
+
 /*!
  * \}
  */
@@ -175,7 +182,7 @@ bool os_event_scheduler(void)
 		do {
 			// Check if the event has been triggered
 			status = event->desc.is_triggered(event->proc,
-					(os_ptr_t) event->args);
+					event->args);
 			if (status != OS_EVENT_NONE) {
 				os_enter_critical();
 				// Remove the process from the event list
@@ -238,11 +245,12 @@ struct os_process os_event_alternate_proc = {
 };
 
 #if CONFIG_OS_USE_SW_INTERRUPTS == true
-void os_interrupt_sleep(struct os_interrupt *interrupt, struct os_event *event)
+void os_interrupt_trigger_on_event(struct os_interrupt *interrupt,
+		struct os_event *event)
 {
 	os_enter_critical();
 	__os_event_start(event);
-	__os_event_register(event, (struct os_process *) interrupt);
+	__os_event_register(event, os_interrupt_get_process(interrupt));
 	os_leave_critical();
 }
 #endif
@@ -254,19 +262,22 @@ void os_task_sleep(struct os_task *task, struct os_event *event)
 	// Start the event
 	__os_event_start(event);
 
-	os_enter_critical();
-	// If the task is enabled, send it to sleep
-	if (os_task_is_enabled(task)) {
-		__os_process_disable(os_task_get_process(task));
-	}
-	// Save the next current task pointer because it will be erase by the
-	// sleep operation
-	os_event_alternate_proc.next = os_current_process->next;
-	// Associate the task with its event and start it
-	__os_event_register(event, os_task_get_process(task));
-	// Call the scheduler
-	os_switch_context(false);
-	os_leave_critical();
+	// Check if the event is already triggered, if not register the event
+	// Doing this does not handle priority if (!__os_event_is_triggered(event)) {
+		os_enter_critical();
+		// If the task is enabled, send it to sleep
+		if (os_task_is_enabled(task)) {
+			__os_process_disable(os_task_get_process(task));
+		}
+		// Save the next current task pointer because it will be erase
+		// by the sleep operation
+		os_event_alternate_proc.next = os_current_process->next;
+		// Associate the task with its event and start it
+		__os_event_register(event, os_task_get_process(task));
+		// Call the scheduler
+		os_switch_context(false);
+		os_leave_critical();
+//	}
 }
 /*!
  * \}
