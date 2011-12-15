@@ -48,9 +48,13 @@
  * It can be enabled and be part of the active process list or disabled and
  * be completely removed from the process scheduler.
  *
+ * \subsubsection section_os_process_task Task
+ *
  * A \b task (\ref os_task) is a process which can be interrupted by the process
  * scheduler at any time. Therefore its execution time is not predictable
  * without a complete view of the active process list.
+ *
+ * \subsubsection section_os_process_interrupt Software Interrupt
  *
  * A \b software \b interrupt (\ref os_interrupt) is a process which will not be
  * interrupted by the process scheduler.
@@ -250,7 +254,7 @@
 #endif
 
 #if CONFIG_OS_USE_PRIORITY == true
-/*! Priority of the task.
+/*! \brief Priority of the task.
  * The lower get the most priority
  */
 enum os_priority {
@@ -260,7 +264,7 @@ enum os_priority {
 	OS_PRIORITY_4 = 3,
 	OS_PRIORITY_5 = 4,
 	OS_PRIORITY_10 = 9,
-	OS_PRIORITY_20 = 19
+	OS_PRIORITY_20 = 19,
 };
 #endif
 
@@ -272,10 +276,21 @@ typedef uint16_t os_tick_t;
 typedef uint32_t os_tick_t;
 #endif
 
+/*! \brief Process type
+ */
 enum os_process_type {
+	/*! \brief Application process
+	 */
 	OS_PROCESS_TYPE_APPLICATION = 0,
+	/*! \brief Task (\ref section_os_process_task)
+	 */
 	OS_PROCESS_TYPE_TASK = 1,
+	/*! \brief Software interrupt (\ref section_os_process_interrupt)
+	 */
 	OS_PROCESS_TYPE_INTERRUPT = 2,
+	/*! \brief Event scheduler
+	 */
+	OS_PROCESS_TYPE_EVENT = 3,
 };
 
 /*! This structure represents a process context
@@ -428,7 +443,8 @@ bool os_process_is_enabled(struct os_process *proc);
  * \return true if this is the application process, false otherwise
  */
 static inline bool os_process_is_application(struct os_process *proc) {
-	return (proc->type == OS_PROCESS_TYPE_APPLICATION);
+	extern struct os_process os_app;
+	return (proc == &os_app);
 }
 
 /*! \brief Check if a process is a task
@@ -440,13 +456,22 @@ static inline bool os_process_is_task(struct os_process *proc) {
 	return (proc->type == OS_PROCESS_TYPE_TASK);
 }
 
-/*! \brief Check if a process is a software
+/*! \brief Check if a process is a software interrupt
  * \ingroup group_os_public_api
  * \param proc The process to be checked
  * \return true if this is a software interrupt, false otherwise
  */
 static inline bool os_process_is_interrupt(struct os_process *proc) {
 	return (proc->type == OS_PROCESS_TYPE_INTERRUPT);
+}
+
+/*! \brief Check if a process is the event scheduler
+ * \ingroup group_os_public_api
+ * \param proc The process to be checked
+ * \return true if this is the event scheduler, false otherwise
+ */
+static inline bool os_process_is_event(struct os_process *proc) {
+	return (proc->type == OS_PROCESS_TYPE_EVENT);
 }
 
 #if CONFIG_OS_USE_PRIORITY == true
@@ -608,14 +633,6 @@ static inline struct os_process *os_switch_context_hook(void) {
  * \brief Internal API. These functions should not be used by the user.
  * \{
  */
-/*! \brief Test if the current running process is the application process.
- * \return true if the current process is the application process, false otherwise.
- */
-static inline bool __os_process_is_application(void) {
-	extern struct os_process os_app;
-	extern struct os_process *os_current_process;
-	return (os_current_process == &os_app);
-}
 /*! \brief Get the application process
  * \return the application process
  */
@@ -625,16 +642,34 @@ static inline struct os_process *__os_process_get_application(void) {
 }
 /*! \brief Enable the application process
  */
-static inline void __os_process_enable_application(void) {
+static inline void __os_process_application_enable(void) {
 	extern struct os_process os_app;
 	os_process_enable(&os_app);
+	os_app.type = OS_PROCESS_TYPE_APPLICATION;
 }
 /*! \brief Disable the application process
  */
-static inline void __os_process_disable_application(void) {
+static inline void __os_process_application_disable(void) {
 	extern struct os_process os_app;
 	os_process_disable(&os_app);
 }
+/*! \brief Enable the event process
+ * If the event process is enabled, the application process will be disabled
+ * as they share the same process.
+ */
+static inline void __os_process_event_enable(void) {
+	extern struct os_process os_app;
+	__os_process_application_enable();
+	os_app.type = OS_PROCESS_TYPE_EVENT;
+}
+/*! \brief Enable the event process
+ * If the event process is enabled, the application process will be disabled
+ * as they share the same process.
+ */
+static inline void __os_process_event_disable(void) {
+	__os_process_application_disable();
+}
+
 /*! \copydoc os_process_enable
  * This function will push the task at the end of the chain list
  * \warning This function does not check if the task is already added to the

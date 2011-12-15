@@ -95,7 +95,7 @@ void __os_process_enable(struct os_process *proc)
 #else
 	// If the application process is running, remove it from the active process
 	// list
-	if (last_proc == &os_app) {
+	if (os_process_is_application(last_proc)) {
 		proc->next = proc;
 	}
 	else {
@@ -145,6 +145,7 @@ void __os_process_disable(struct os_process *proc)
 		// it and add the application process instead
 		os_app.next = &os_app;
 		proc->next = &os_app;
+		os_app.type = OS_PROCESS_TYPE_APPLICATION;
 	}
 	else {
 		last_proc->next = proc->next;

@@ -131,9 +131,9 @@ void __os_event_register(struct os_event *event, struct os_process *proc)
 		sort_fct = event->desc.sort;
 	}
 
-	// Enable the application process if not done already, before messing up
+	// Enable the event process if not done already, before messing up
 	// with the process context
-	__os_process_enable_application();
+	__os_process_event_enable();
 
 	// Add the process to the event sorted process list
 	current_proc = event->proc;
@@ -173,7 +173,7 @@ bool os_event_scheduler(void)
 	// If no event, return
 	if (!event) {
 		// Disable the application process
-		__os_process_disable_application();
+		__os_process_event_disable();
 		return false;
 	}
 
