@@ -25,7 +25,7 @@ DOXYFILE_ENCODING      = UTF-8
 # The PROJECT_NAME tag is a single word (or a sequence of words surrounded
 # by quotes) that should identify the project.
 
-PROJECT_NAME           = "Operating System Documentation"
+PROJECT_NAME           = "eeOS (Embedded Event-driven Operating System)"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number.
 # This could be handy for archiving the generated documentation or
@@ -1368,7 +1368,9 @@ SEARCH_INCLUDES        = YES
 # contain include files that are not input files but should be processed by
 # the preprocessor.
 
-INCLUDE_PATH           =  ../../../../../drivers/tc ../../../../../drivers/cpu/cycle_counter ../../../../../boards ../.. ../../../../../utils/preprocessor ../../../../../../common/boards ../../../../../../common/utils ../../../../../boards/evk1105 ../../port/avr32_uc3 ../../../../../drivers/rtc ../../../../../drivers/pm ../../../../../drivers/gpio ../../../../../drivers/flashc ../../../../../utils
+INCLUDE_PATH           = \
+			../ \
+			../port/avr32_uc3
 
 # You can use the INCLUDE_FILE_PATTERNS tag to specify one or more wildcard
 # patterns (like *.h and *.hpp) to filter out the header-files in the
@@ -1458,7 +1460,7 @@ PERL_PATH              = /usr/bin/perl
 # fallback. It is recommended to install and use dot, since it yields more
 # powerful graphs.
 
-CLASS_DIAGRAMS         = YES
+CLASS_DIAGRAMS         = NO
 
 # You can define message sequence charts within doxygen comments using the \msc
 # command. Doxygen will then run the mscgen tool (see
@@ -1480,7 +1482,7 @@ HIDE_UNDOC_RELATIONS   = YES
 # toolkit from AT&T and Lucent Bell Labs. The other options in this section
 # have no effect if this option is set to NO (the default)
 
-HAVE_DOT               = YES
+HAVE_DOT               = NO
 
 # The DOT_NUM_THREADS specifies the number of dot invocations doxygen is
 # allowed to run in parallel. When set to 0 (the default) doxygen will
