@@ -71,9 +71,8 @@ bool os_task_create(struct os_task *task, os_proc_ptr_t task_ptr, os_ptr_t args,
 
 struct os_task *os_task_get_current(void)
 {
-	extern struct os_process *os_current_process;
-	if (os_process_is_task(os_current_process)) {
-		return os_task_from_process(os_current_process);
+	if (os_process_is_task(os_process_get_current())) {
+		return os_task_from_process(os_process_get_current());
 	}
 	return NULL;
 }

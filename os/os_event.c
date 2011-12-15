@@ -83,13 +83,6 @@ static inline void __os_event_start(struct os_event *event) {
 	}
 }
 
-static inline bool __os_event_is_triggered(struct os_event *event) {
-	if (event->desc.is_triggered(os_get_current_process(), event->args)
-			== OS_EVENT_NONE)
-		return false;
-	return true;
-}
-
 /*!
  * \}
  */
@@ -163,22 +156,20 @@ void __os_event_register(struct os_event *event, struct os_process *proc)
 /*!
  * Event scheduler
  */
-bool os_event_scheduler(void)
+void os_event_scheduler(void)
 {
 	// Current event to process
 	struct os_event *event = os_current_event;
 	struct os_process *proc;
 	enum os_event_status status;
 
-	// If no event, return
+	// If no events, disable the event process
 	if (!event) {
-		// Disable the application process
 		__os_process_event_disable();
-		return false;
 	}
 
 	// Loop through the event list
-	do {
+	while (event) {
 		do {
 			// Check if the event has been triggered
 			status = event->desc.is_triggered(event->proc,
@@ -200,10 +191,10 @@ bool os_event_scheduler(void)
 		} while (status == OS_EVENT_OK_CONTINUE);
 		// Next event
 		event = event->next;
-	} while (event);
+	}
 
-	// There is at least 1 event in the queue
-	return true;
+	// Call the scheduler
+	os_yield();
 }
 
 struct __os_event_custom_function_args {
@@ -257,8 +248,6 @@ void os_interrupt_trigger_on_event(struct os_interrupt *interrupt,
 
 void os_task_sleep(struct os_task *task, struct os_event *event)
 {
-	extern struct os_process *os_current_process;
-
 	// Start the event
 	__os_event_start(event);
 
@@ -271,7 +260,7 @@ void os_task_sleep(struct os_task *task, struct os_event *event)
 		}
 		// Save the next current task pointer because it will be erase
 		// by the sleep operation
-		os_event_alternate_proc.next = os_current_process->next;
+		os_event_alternate_proc.next = os_process_get_current()->next;
 		// Associate the task with its event and start it
 		__os_event_register(event, os_task_get_process(task));
 		// Call the scheduler

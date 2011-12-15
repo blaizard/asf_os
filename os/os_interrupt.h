@@ -166,9 +166,8 @@ void __os_interrupt_handler(os_ptr_t args);
 
 	#define OS_SCHEDULER_POST_INTERRUPT_HOOK() \
 		do { \
-			extern struct os_process *os_current_process; \
-			if (os_process_is_interrupt(os_current_process)) { \
-				os_current_process->sp = NULL; \
+			if (os_process_is_interrupt(os_process_get_current())) { \
+				os_process_get_current()->sp = NULL; \
 			} \
 		} while (false)
 #endif

@@ -379,63 +379,13 @@ struct os_process *os_scheduler(void);
  * \{
  */
 
-/*! \brief Call the scheduler to switch to a new task that is ready to run.
- * This function is useful for cooperative task swiching
- * \ingroup group_os_public_api
- */
-void os_yield(void);
-
-/*! \brief Start the task scheduling process
- * \ingroup group_os_public_api
- * \param ref_hz The frequency which runs the peripheral to generate
- * the ticks. Usually this frequency is equal to the CPU frequency.
- */
-static inline void os_start(uint32_t ref_hz) {
-	extern void os_setup_scheduler(uint32_t);
-#if CONFIG_OS_SCHEDULER_TYPE != CONFIG_OS_SCHEDULER_COOPERATIVE
-	// Setup the scheduler
-	os_setup_scheduler(ref_hz);
-#endif
-	// Launch the scheduler
-	os_yield();
-	// Idle loop
-	while (true) {
-		if (!os_event_scheduler()) {
-			HOOK_OS_IDLE();
-		}
-	}
-}
-
-/*! \brief Get the current version of the running operating system
- * \return A string containing the version of the OS.
- */
-static inline char *os_get_version(void) {
-	return OS_VERSION;
-}
-
 /*! \brief Get the current process
  * \return A pointer on the current procress
  */
-struct os_process *os_get_current_process(void);
-
-/*! \brief Enable the execution a process
- * \ingroup group_os_public_api
- * \param proc The process to be enabled
- */
-void os_process_enable(struct os_process *proc);
-
-/*! \brief Disable the execution of a process
- * \ingroup group_os_public_api
- * \param proc The process to be disabled
- */
-void os_process_disable(struct os_process *proc);
-
-/*! \brief Check wether a process is enabled or not
- * \ingroup group_os_public_api
- * \param proc The process to be checked
- * \return true if enabled, false otherwise
- */
-bool os_process_is_enabled(struct os_process *proc);
+static inline struct os_process *os_process_get_current(void) {
+	extern struct os_process *os_current_process;
+	return os_current_process;
+}
 
 /*! \brief Check if a process is the application process
  * \ingroup group_os_public_api
@@ -462,7 +412,11 @@ static inline bool os_process_is_task(struct os_process *proc) {
  * \return true if this is a software interrupt, false otherwise
  */
 static inline bool os_process_is_interrupt(struct os_process *proc) {
+#if CONFIG_OS_USE_SW_INTERRUPTS == true
 	return (proc->type == OS_PROCESS_TYPE_INTERRUPT);
+#else
+	return false;
+#endif
 }
 
 /*! \brief Check if a process is the event scheduler
@@ -471,8 +425,68 @@ static inline bool os_process_is_interrupt(struct os_process *proc) {
  * \return true if this is the event scheduler, false otherwise
  */
 static inline bool os_process_is_event(struct os_process *proc) {
+#if CONFIG_OS_USE_EVENTS == true
 	return (proc->type == OS_PROCESS_TYPE_EVENT);
+#else
+	return false;
+#endif
 }
+
+/*! \brief Call the scheduler to switch to a new task that is ready to run.
+ * This function is useful for cooperative task swiching
+ * \ingroup group_os_public_api
+ */
+void os_yield(void);
+
+/*! \brief Start the task scheduling process
+ * \ingroup group_os_public_api
+ * \param ref_hz The frequency which runs the peripheral to generate
+ * the ticks. Usually this frequency is equal to the CPU frequency.
+ */
+static inline void os_start(uint32_t ref_hz) {
+	extern void os_setup_scheduler(uint32_t);
+#if CONFIG_OS_SCHEDULER_TYPE != CONFIG_OS_SCHEDULER_COOPERATIVE
+	// Setup the scheduler
+	os_setup_scheduler(ref_hz);
+#endif
+	// Launch the scheduler
+	os_yield();
+	// Idle loop
+	while (true) {
+		if (os_process_is_event(os_process_get_current())) {
+			os_event_scheduler();
+		}
+		else {
+			HOOK_OS_IDLE();
+		}
+	}
+}
+
+/*! \brief Get the current version of the running operating system
+ * \return A string containing the version of the OS.
+ */
+static inline char *os_get_version(void) {
+	return OS_VERSION;
+}
+
+/*! \brief Enable the execution a process
+ * \ingroup group_os_public_api
+ * \param proc The process to be enabled
+ */
+void os_process_enable(struct os_process *proc);
+
+/*! \brief Disable the execution of a process
+ * \ingroup group_os_public_api
+ * \param proc The process to be disabled
+ */
+void os_process_disable(struct os_process *proc);
+
+/*! \brief Check wether a process is enabled or not
+ * \ingroup group_os_public_api
+ * \param proc The process to be checked
+ * \return true if enabled, false otherwise
+ */
+bool os_process_is_enabled(struct os_process *proc);
 
 #if CONFIG_OS_USE_PRIORITY == true
 /*! \brief Change the priority of a process

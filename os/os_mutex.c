@@ -52,7 +52,7 @@ void os_mutex_lock(struct os_mutex *mutex)
 		os_enter_critical();
 		if (!mutex->is_locked) {
 			mutex->is_locked = true;
-			mutex->process = os_get_current_process();
+			mutex->process = os_process_get_current();
 			is_taken = true;
 		}
 		os_leave_critical();
@@ -67,7 +67,7 @@ void os_mutex_lock(struct os_mutex *mutex)
 void os_mutex_unlock(struct os_mutex *mutex)
 {
 	// Only the process which locked the mutex can unlock it
-	if (os_get_current_process() == mutex->process) {
+	if (os_process_get_current() == mutex->process) {
 		os_enter_critical();
 		mutex->is_locked = false;
 		os_leave_critical();

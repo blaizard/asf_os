@@ -174,13 +174,7 @@ bool os_event_sort_priority(struct os_process *proc1, struct os_process *proc2);
  * \return true if at least 1 event is present in the event list, false
  * otherwise.
  */
-#if CONFIG_OS_USE_EVENTS == true
-bool os_event_scheduler(void);
-#else
-static inline bool os_event_scheduler(void) {
-	return false;
-}
-#endif
+void os_event_scheduler(void);
 
 /*! \brief Create a new event
  * \ingroup group_os_internal_api

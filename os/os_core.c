@@ -73,11 +73,6 @@ struct os_process *os_scheduler(void)
 }
 #endif
 
-struct os_process *os_get_current_process(void)
-{
-	return os_current_process;
-}
-
 void __os_process_enable(struct os_process *proc)
 {
 	struct os_process *last_proc = proc;
