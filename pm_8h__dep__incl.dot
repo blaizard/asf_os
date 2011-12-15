@@ -1,0 +1,20 @@
+digraph G
+{
+  edge [fontname="FreeSans",fontsize="10",labelfontname="FreeSans",labelfontsize="10"];
+  node [fontname="FreeSans",fontsize="10",shape=record];
+  Node1 [label="pm.h",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled" fontcolor="black"];
+  Node1 -> Node2 [dir=back,color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
+  Node2 [label="power_clocks_lib.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$power__clocks__lib_8h.html",tooltip="High-level library abstracting features such as oscillators/pll/dfll configuration, clock configuration, System-sensible parameters configuration, buses clocks configuration, sleep mode, reset."];
+  Node2 -> Node3 [dir=back,color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
+  Node3 [label="power_clocks_lib.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$power__clocks__lib_8c.html",tooltip="High-level library abstracting features such as oscillators/pll/dfll configuration, clock configuration, System-sensible parameters configuration, buses clocks configuration, sleep mode, reset."];
+  Node1 -> Node4 [dir=back,color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
+  Node4 [label="pm.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pm_8c.html",tooltip="Power Manager driver."];
+  Node1 -> Node5 [dir=back,color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
+  Node5 [label="main.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$main_8c.html"];
+  Node1 -> Node6 [dir=back,color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
+  Node6 [label="pm_conf_clocks.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pm__conf__clocks_8c.html",tooltip="Power Manager clocks configuration helper."];
+  Node1 -> Node7 [dir=back,color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
+  Node7 [label="rtc.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$rtc_8c.html",tooltip="RTC driver for AVR32 UC3."];
+  Node1 -> Node8 [dir=back,color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
+  Node8 [label="sleep.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$sleep_8h.html",tooltip="Sleep mode access."];
+}

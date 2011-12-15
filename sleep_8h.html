@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>OS: Main Page</title>
+<title>OS: sleep.h File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/search.js"></script>
@@ -27,11 +27,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
   <div id="navrow1" class="tabs">
     <ul class="tablist">
-      <li class="current"><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="annotated.html"><span>Data&#160;Structures</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
+      <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li id="searchli">
         <div id="MSearchBox" class="MSearchBoxInactive">
         <span class="left">
@@ -50,12 +50,68 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </li>
     </ul>
   </div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="files.html"><span>File&#160;List</span></a></li>
+      <li><a href="globals.html"><span>Globals</span></a></li>
+    </ul>
+  </div>
 </div>
 <div class="header">
+  <div class="summary">
+<a href="#define-members">Defines</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
-<div class="title">OS Documentation</div>  </div>
+<div class="title">sleep.h File Reference</div>  </div>
 </div>
 <div class="contents">
+
+<p>Sleep mode access.  
+<a href="#details">More...</a></p>
+<div class="textblock"><code>#include &lt;<a class="el" href="compiler_8h_source.html">compiler.h</a>&gt;</code><br/>
+<code>#include &quot;<a class="el" href="pm_8h_source.html">pm.h</a>&quot;</code><br/>
+</div><div class="textblock"><div class="dynheader">
+Include dependency graph for sleep.h:</div>
+<div class="dyncontent">
+<div class="center"><img src="sleep_8h__incl.gif" border="0" usemap="#sleep_8h" alt=""/></div>
+<map name="sleep_8h" id="sleep_8h">
+</map>
+</div>
+</div>
+<p><a href="sleep_8h_source.html">Go to the source code of this file.</a></p>
+<table class="memberdecls">
+<tr><td colspan="2"><h2><a name="define-members"></a>
+Defines</h2></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__sleep__group.html#gafaa43b0ddb48d0118f08543d791822c5">AVR32_PM_SMODE_DEEPSTOP</a>&#160;&#160;&#160;0x00000004</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the MCU in the specified sleep mode.  <a href="group__sleep__group.html#gafaa43b0ddb48d0118f08543d791822c5"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="sleep_8h.html#ae3781b77d6e4988416907e70d197616b">AVR32_PM_SMODE_GMCLEAR_MASK</a>&#160;&#160;&#160;0x80</td></tr>
+<tr><td colspan="2"><h2><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__sleep__group.html#ga2d6d760daaa83a0240c982f2a9bf8202">pm_sleep</a> (int sleep_mode)</td></tr>
+</table>
+<hr/><a name="details" id="details"></a><h2>Detailed Description</h2>
+<div class="textblock"><p>Sleep mode access. </p>
+<p>Copyright (C) 2010 Atmel Corporation. All rights reserved. </p>
+
+<p>Definition in file <a class="el" href="sleep_8h_source.html">sleep.h</a>.</p>
+</div><hr/><h2>Define Documentation</h2>
+<a class="anchor" id="ae3781b77d6e4988416907e70d197616b"></a><!-- doxytag: member="sleep.h::AVR32_PM_SMODE_GMCLEAR_MASK" ref="ae3781b77d6e4988416907e70d197616b" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define AVR32_PM_SMODE_GMCLEAR_MASK&#160;&#160;&#160;0x80</td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Definition at line <a class="el" href="sleep_8h_source.html#l00048">48</a> of file <a class="el" href="sleep_8h_source.html">sleep.h</a>.</p>
+
+<p>Referenced by <a class="el" href="sleep_8h_source.html#l00090">pm_sleep()</a>.</p>
+
+</div>
+</div>
 </div>
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
@@ -71,7 +127,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr class="footer"/><address class="footer"><small>Generated on Thu Dec 15 2011 13:05:46 for OS by&#160;
+<hr class="footer"/><address class="footer"><small>Generated on Thu Dec 15 2011 13:05:48 for OS by&#160;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.4 </small></address>
 </body>

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>OS: Main Page</title>
+<title>OS: gpio_map_t Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/search.js"></script>
@@ -27,10 +27,10 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
   <div id="navrow1" class="tabs">
     <ul class="tablist">
-      <li class="current"><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="modules.html"><span>Modules</span></a></li>
-      <li><a href="annotated.html"><span>Data&#160;Structures</span></a></li>
+      <li class="current"><a href="annotated.html"><span>Data&#160;Structures</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
       <li id="searchli">
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -50,12 +50,76 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </li>
     </ul>
   </div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="annotated.html"><span>Data&#160;Structures</span></a></li>
+      <li><a href="functions.html"><span>Data&#160;Fields</span></a></li>
+    </ul>
+  </div>
 </div>
 <div class="header">
+  <div class="summary">
+<a href="#pub-attribs">Data Fields</a>  </div>
   <div class="headertitle">
-<div class="title">OS Documentation</div>  </div>
+<div class="title">gpio_map_t Struct Reference<div class="ingroups"><a class="el" href="group__group__avr32__drivers__gpio.html">GPIO - General-Purpose Input/Output</a></div></div>  </div>
 </div>
 <div class="contents">
+<!-- doxytag: class="gpio_map_t" -->
+<p>A type definition of pins and modules connectivity.  
+ <a href="structgpio__map__t.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="gpio_8h_source.html">gpio.h</a>&gt;</code></p>
+<table class="memberdecls">
+<tr><td colspan="2"><h2><a name="pub-attribs"></a>
+Data Fields</h2></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">unsigned char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structgpio__map__t.html#a8c496ffd37b778b552b3e7e66a6af367">function</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Module function.  <a href="#a8c496ffd37b778b552b3e7e66a6af367"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">unsigned char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structgpio__map__t.html#adcde0453f1866fc60d49fae253c1f61d">pin</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Module pin.  <a href="#adcde0453f1866fc60d49fae253c1f61d"></a><br/></td></tr>
+</table>
+<hr/><a name="details" id="details"></a><h2>Detailed Description</h2>
+<div class="textblock"><p>A type definition of pins and modules connectivity. </p>
+
+<p>Definition at line <a class="el" href="gpio_8h_source.html#l00098">98</a> of file <a class="el" href="gpio_8h_source.html">gpio.h</a>.</p>
+</div><hr/><h2>Field Documentation</h2>
+<a class="anchor" id="a8c496ffd37b778b552b3e7e66a6af367"></a><!-- doxytag: member="gpio_map_t::function" ref="a8c496ffd37b778b552b3e7e66a6af367" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned char <a class="el" href="structgpio__map__t.html#a8c496ffd37b778b552b3e7e66a6af367">gpio_map_t::function</a></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Module function. </p>
+
+<p>Definition at line <a class="el" href="gpio_8h_source.html#l00101">101</a> of file <a class="el" href="gpio_8h_source.html">gpio.h</a>.</p>
+
+<p>Referenced by <a class="el" href="gpio_8c_source.html#l00057">gpio_enable_module()</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="adcde0453f1866fc60d49fae253c1f61d"></a><!-- doxytag: member="gpio_map_t::pin" ref="adcde0453f1866fc60d49fae253c1f61d" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned char <a class="el" href="structgpio__map__t.html#adcde0453f1866fc60d49fae253c1f61d">gpio_map_t::pin</a></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Module pin. </p>
+
+<p>Definition at line <a class="el" href="gpio_8h_source.html#l00100">100</a> of file <a class="el" href="gpio_8h_source.html">gpio.h</a>.</p>
+
+<p>Referenced by <a class="el" href="gpio_8c_source.html#l00148">gpio_enable_gpio()</a>, and <a class="el" href="gpio_8c_source.html#l00057">gpio_enable_module()</a>.</p>
+
+</div>
+</div>
 </div>
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
@@ -71,7 +135,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr class="footer"/><address class="footer"><small>Generated on Thu Dec 15 2011 13:05:46 for OS by&#160;
+<hr class="footer"/><address class="footer"><small>Generated on Thu Dec 15 2011 13:05:50 for OS by&#160;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.4 </small></address>
 </body>

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>OS: Main Page</title>
+<title>OS: interrupt.h Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/search.js"></script>
@@ -27,11 +27,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
   <div id="navrow1" class="tabs">
     <ul class="tablist">
-      <li class="current"><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="annotated.html"><span>Data&#160;Structures</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
+      <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li id="searchli">
         <div id="MSearchBox" class="MSearchBoxInactive">
         <span class="left">
@@ -50,12 +50,42 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </li>
     </ul>
   </div>
-</div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="files.html"><span>File&#160;List</span></a></li>
+      <li><a href="globals.html"><span>Globals</span></a></li>
+    </ul>
+  </div>
 <div class="header">
   <div class="headertitle">
-<div class="title">OS Documentation</div>  </div>
+<div class="title">interrupt.h</div>  </div>
 </div>
 <div class="contents">
+<a href="interrupt_8h.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 
+<a name="l00038"></a>00038 <span class="preprocessor">#ifndef UTILS_INTERRUPT_H</span>
+<a name="l00039"></a>00039 <span class="preprocessor"></span><span class="preprocessor">#define UTILS_INTERRUPT_H</span>
+<a name="l00040"></a>00040 <span class="preprocessor"></span>
+<a name="l00041"></a>00041 <span class="preprocessor">#include &lt;<a class="code" href="parts_8h.html" title="Arch file for AVR32.">parts.h</a>&gt;</span>
+<a name="l00042"></a>00042 
+<a name="l00043"></a>00043 <span class="preprocessor">#if XMEGA || MEGA</span>
+<a name="l00044"></a>00044 <span class="preprocessor"></span><span class="preprocessor">#  include &quot;interrupt/interrupt_avr8.h&quot;</span>
+<a name="l00045"></a>00045 <span class="preprocessor">#elif UC3</span>
+<a name="l00046"></a>00046 <span class="preprocessor"></span><span class="preprocessor">#  include &quot;<a class="code" href="interrupt__avr32_8h.html" title="Global interrupt management for 32-bit AVR.">interrupt/interrupt_avr32.h</a>&quot;</span>
+<a name="l00047"></a>00047 <span class="preprocessor">#else</span>
+<a name="l00048"></a>00048 <span class="preprocessor"></span><span class="preprocessor">#  error Unsupported device.</span>
+<a name="l00049"></a>00049 <span class="preprocessor"></span><span class="preprocessor">#endif</span>
+<a name="l00050"></a>00050 <span class="preprocessor"></span>
+<a name="l00059"></a>00059 <span class="preprocessor">#if defined(__DOXYGEN__)</span>
+<a name="l00060"></a>00060 <span class="preprocessor"></span>
+<a name="l00068"></a><a class="code" href="group__interrupt__group.html#ga883d4a74a24d4a98f3a5d8dc146a217d">00068</a> <span class="preprocessor">#  define CONFIG_INTERRUPT_FORCE_INTC</span>
+<a name="l00069"></a>00069 <span class="preprocessor"></span><span class="preprocessor">#endif</span>
+<a name="l00070"></a>00070 <span class="preprocessor"></span>
+<a name="l00072"></a>00072 
+<a name="l00073"></a>00073 
+<a name="l00124"></a>00124 
+<a name="l00126"></a>00126 
+<a name="l00132"></a>00132 <span class="preprocessor">#endif </span><span class="comment">/* UTILS_INTERRUPT_H */</span>
+</pre></div></div>
 </div>
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>OS: Main Page</title>
+<title>OS: stringz.h File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/search.js"></script>
@@ -27,11 +27,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
   <div id="navrow1" class="tabs">
     <ul class="tablist">
-      <li class="current"><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="annotated.html"><span>Data&#160;Structures</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
+      <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li id="searchli">
         <div id="MSearchBox" class="MSearchBoxInactive">
         <span class="left">
@@ -50,13 +50,51 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </li>
     </ul>
   </div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="files.html"><span>File&#160;List</span></a></li>
+      <li><a href="globals.html"><span>Globals</span></a></li>
+    </ul>
+  </div>
 </div>
 <div class="header">
+  <div class="summary">
+<a href="#define-members">Defines</a>  </div>
   <div class="headertitle">
-<div class="title">OS Documentation</div>  </div>
+<div class="title">stringz.h File Reference</div>  </div>
 </div>
 <div class="contents">
+
+<p>Preprocessor stringizing utils.  
+<a href="#details">More...</a></p>
+<div class="textblock"><div class="dynheader">
+This graph shows which files directly or indirectly include this file:</div>
+<div class="dyncontent">
+<div class="center"><img src="stringz_8h__dep__incl.gif" border="0" usemap="#stringz_8hdep" alt=""/></div>
+<map name="stringz_8hdep" id="stringz_8hdep">
+</map>
 </div>
+</div>
+<p><a href="stringz_8h_source.html">Go to the source code of this file.</a></p>
+<table class="memberdecls">
+<tr><td colspan="2"><h2><a name="define-members"></a>
+Defines</h2></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__group__avr32__utils__stringz.html#ga612b641ada5f31dd0cb1c036b308d242">ASTRINGZ</a>(x)&#160;&#160;&#160;STRINGZ(x)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Absolute stringize.  <a href="group__group__avr32__utils__stringz.html#ga612b641ada5f31dd0cb1c036b308d242"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__group__avr32__utils__stringz.html#gab3a4df2ccbd03c2809ee7ad542ab9793">STRINGZ</a>(x)&#160;&#160;&#160;#x</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Stringize.  <a href="group__group__avr32__utils__stringz.html#gab3a4df2ccbd03c2809ee7ad542ab9793"></a><br/></td></tr>
+</table>
+<hr/><a name="details" id="details"></a><h2>Detailed Description</h2>
+<div class="textblock"><p>Preprocessor stringizing utils. </p>
+<ul>
+<li>Compiler: IAR EWAVR32 and GNU GCC for AVR32</li>
+<li>Supported devices: All AVR32 devices can be used.</li>
+</ul>
+<dl class="author"><dt><b>Author:</b></dt><dd>Atmel Corporation: <a href="http://www.atmel.com">http://www.atmel.com</a> <br/>
+ Support and FAQ: <a href="http://support.atmel.no/">http://support.atmel.no/</a> </dd></dl>
+
+<p>Definition in file <a class="el" href="stringz_8h_source.html">stringz.h</a>.</p>
+</div></div>
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -71,7 +109,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr class="footer"/><address class="footer"><small>Generated on Thu Dec 15 2011 13:05:46 for OS by&#160;
+<hr class="footer"/><address class="footer"><small>Generated on Thu Dec 15 2011 13:05:48 for OS by&#160;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.4 </small></address>
 </body>

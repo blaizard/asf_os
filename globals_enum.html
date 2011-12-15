@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>OS: Main Page</title>
+<title>OS: Globals</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/search.js"></script>
@@ -27,11 +27,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
   <div id="navrow1" class="tabs">
     <ul class="tablist">
-      <li class="current"><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="annotated.html"><span>Data&#160;Structures</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
+      <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li id="searchli">
         <div id="MSearchBox" class="MSearchBoxInactive">
         <span class="left">
@@ -50,12 +50,51 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </li>
     </ul>
   </div>
-</div>
-<div class="header">
-  <div class="headertitle">
-<div class="title">OS Documentation</div>  </div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="files.html"><span>File&#160;List</span></a></li>
+      <li class="current"><a href="globals.html"><span>Globals</span></a></li>
+    </ul>
+  </div>
+  <div id="navrow3" class="tabs2">
+    <ul class="tablist">
+      <li><a href="globals.html"><span>All</span></a></li>
+      <li><a href="globals_func.html"><span>Functions</span></a></li>
+      <li><a href="globals_vars.html"><span>Variables</span></a></li>
+      <li><a href="globals_type.html"><span>Typedefs</span></a></li>
+      <li class="current"><a href="globals_enum.html"><span>Enumerations</span></a></li>
+      <li><a href="globals_eval.html"><span>Enumerator</span></a></li>
+      <li><a href="globals_defs.html"><span>Defines</span></a></li>
+    </ul>
+  </div>
 </div>
 <div class="contents">
+&#160;<ul>
+<li>os_event_status
+: <a class="el" href="os__event_8h.html#a9658f0b4244c28dcd0efdcdbb2109fd7">os_event.h</a>
+</li>
+<li>os_priority
+: <a class="el" href="os__core_8h.html#a46596f7e1b6a7c074aafaf07503963dc">os_core.h</a>
+</li>
+<li>os_process_type
+: <a class="el" href="os__core_8h.html#a9469ceba4045fc9a6cdd1625f0b56e63">os_core.h</a>
+</li>
+<li>os_task_option
+: <a class="el" href="os__task_8h.html#ab7c3c82aa94cdf350c0ea4526529f252">os_task.h</a>
+</li>
+<li>pcl_dfll_t
+: <a class="el" href="group__group__avr32__drivers__pm__power__clocks__lib.html#gaf9cae9b1b110d1b3d27c23593a757074">power_clocks_lib.h</a>
+</li>
+<li>pcl_mainclk_t
+: <a class="el" href="group__group__avr32__drivers__pm__power__clocks__lib.html#ga262b8e2623fe509dd4eb8d46bfe6011b">power_clocks_lib.h</a>
+</li>
+<li>pcl_osc_t
+: <a class="el" href="group__group__avr32__drivers__pm__power__clocks__lib.html#gaf1e177f049f666a68c4969ab118bac6b">power_clocks_lib.h</a>
+</li>
+<li>status_code
+: <a class="el" href="group__group__avr32__utils__status__codes.html#ga751c892e5a46b8e7d282085a5a5bf151">status_codes.h</a>
+</li>
+</ul>
 </div>
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
@@ -71,7 +110,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr class="footer"/><address class="footer"><small>Generated on Thu Dec 15 2011 13:05:46 for OS by&#160;
+<hr class="footer"/><address class="footer"><small>Generated on Thu Dec 15 2011 13:05:51 for OS by&#160;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.4 </small></address>
 </body>

@@ -1,0 +1,11 @@
+digraph G
+{
+  edge [fontname="FreeSans",fontsize="10",labelfontname="FreeSans",labelfontsize="10"];
+  node [fontname="FreeSans",fontsize="10",shape=record];
+  rankdir=LR;
+  Node1 [label="pcl_configure_clocks_rcsys",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled" fontcolor="black"];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
+  Node2 [label="pcl_configure_synchronous_clocks",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$power__clocks__lib_8c.html#a92e75eae7678315865429a64f7562644",tooltip="Device-specific implementation."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
+  Node3 [label="flashc_set_flash_waitstate_and_readmode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__group__avr32__drivers__flashc.html#gaa943e0ec113449ecf316740b45426880",tooltip="Depednding to the CPU frequency, set the wait states of flash read accesses and enable or disable the..."];
+}

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>OS: Main Page</title>
+<title>OS: interrupt.h File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/search.js"></script>
@@ -27,11 +27,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
   <div id="navrow1" class="tabs">
     <ul class="tablist">
-      <li class="current"><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="annotated.html"><span>Data&#160;Structures</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
+      <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li id="searchli">
         <div id="MSearchBox" class="MSearchBoxInactive">
         <span class="left">
@@ -50,13 +50,52 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </li>
     </ul>
   </div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="files.html"><span>File&#160;List</span></a></li>
+      <li><a href="globals.html"><span>Globals</span></a></li>
+    </ul>
+  </div>
 </div>
 <div class="header">
+  <div class="summary">
+<a href="#define-members">Defines</a>  </div>
   <div class="headertitle">
-<div class="title">OS Documentation</div>  </div>
+<div class="title">interrupt.h File Reference</div>  </div>
 </div>
 <div class="contents">
+
+<p>Global interrupt management for 8- and 32-bit AVR.  
+<a href="#details">More...</a></p>
+<div class="textblock"><code>#include &lt;<a class="el" href="parts_8h_source.html">parts.h</a>&gt;</code><br/>
+</div><div class="textblock"><div class="dynheader">
+Include dependency graph for interrupt.h:</div>
+<div class="dyncontent">
+<div class="center"><img src="interrupt_8h__incl.gif" border="0" usemap="#interrupt_8h" alt=""/></div>
+<map name="interrupt_8h" id="interrupt_8h">
+</map>
 </div>
+</div><div class="textblock"><div class="dynheader">
+This graph shows which files directly or indirectly include this file:</div>
+<div class="dyncontent">
+<div class="center"><img src="interrupt_8h__dep__incl.gif" border="0" usemap="#interrupt_8hdep" alt=""/></div>
+<map name="interrupt_8hdep" id="interrupt_8hdep">
+</map>
+</div>
+</div>
+<p><a href="interrupt_8h_source.html">Go to the source code of this file.</a></p>
+<table class="memberdecls">
+<tr><td colspan="2"><h2><a name="define-members"></a>
+Defines</h2></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__interrupt__group.html#ga883d4a74a24d4a98f3a5d8dc146a217d">CONFIG_INTERRUPT_FORCE_INTC</a></td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Force usage of the ASF INTC driver.  <a href="group__interrupt__group.html#ga883d4a74a24d4a98f3a5d8dc146a217d"></a><br/></td></tr>
+</table>
+<hr/><a name="details" id="details"></a><h2>Detailed Description</h2>
+<div class="textblock"><p>Global interrupt management for 8- and 32-bit AVR. </p>
+<p>Copyright (C) 2010 Atmel Corporation. All rights reserved. </p>
+
+<p>Definition in file <a class="el" href="interrupt_8h_source.html">interrupt.h</a>.</p>
+</div></div>
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -71,7 +110,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr class="footer"/><address class="footer"><small>Generated on Thu Dec 15 2011 13:05:46 for OS by&#160;
+<hr class="footer"/><address class="footer"><small>Generated on Thu Dec 15 2011 13:05:47 for OS by&#160;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.4 </small></address>
 </body>

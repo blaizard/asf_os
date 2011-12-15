@@ -1,0 +1,11 @@
+digraph G
+{
+  edge [fontname="FreeSans",fontsize="10",labelfontname="FreeSans",labelfontsize="10"];
+  node [fontname="FreeSans",fontsize="10",shape=record];
+  rankdir=LR;
+  Node1 [label="pm_enable_clk32",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled" fontcolor="black"];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
+  Node2 [label="pm_enable_clk32_no_wait",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__group__avr32__drivers__pm.html#gab4b3927822c15f8df87264dc234d2c09",tooltip="This function will enable the oscillator 32 to be used with no startup time."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
+  Node3 [label="pm_wait_for_clk32_ready",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__group__avr32__drivers__pm.html#ga9700519e5fc96b6cbb4d4e74d710cf49",tooltip="This function will wait until the osc32 clock is ready."];
+}

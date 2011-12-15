@@ -1,0 +1,9 @@
+digraph G
+{
+  edge [fontname="FreeSans",fontsize="10",labelfontname="FreeSans",labelfontsize="10"];
+  node [fontname="FreeSans",fontsize="10",shape=record];
+  rankdir=LR;
+  Node1 [label="__os_event_is_triggered",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled" fontcolor="black"];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
+  Node2 [label="os_get_current_process",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$os__core_8c.html#a032d6f1843bb998a4162c8798bfb23d3",tooltip="Get the current process."];
+}

@@ -1,0 +1,9 @@
+digraph G
+{
+  edge [fontname="FreeSans",fontsize="10",labelfontname="FreeSans",labelfontsize="10"];
+  node [fontname="FreeSans",fontsize="10",shape=record];
+  rankdir=LR;
+  Node1 [label="os_switch_context_hook",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled" fontcolor="black"];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
+  Node2 [label="os_scheduler",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$os__core_8c.html#a20076b02ccddcff5a14e46779c909b7b",tooltip="This function will define the rules to change the task."];
+}

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>OS: Main Page</title>
+<title>OS: Modules</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/search.js"></script>
@@ -27,9 +27,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
   <div id="navrow1" class="tabs">
     <ul class="tablist">
-      <li class="current"><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
-      <li><a href="modules.html"><span>Modules</span></a></li>
+      <li class="current"><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="annotated.html"><span>Data&#160;Structures</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
       <li id="searchli">
@@ -53,9 +53,45 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
 <div class="header">
   <div class="headertitle">
-<div class="title">OS Documentation</div>  </div>
+<div class="title">Modules</div>  </div>
 </div>
 <div class="contents">
+<div class="textblock">Here is a list of all modules:</div><ul>
+<li><a class="el" href="group__interrupt__group.html">Global interrupt management</a><ul>
+<li><a class="el" href="group__interrupt__deprecated__group.html">Deprecated interrupt definitions</a></li>
+</ul>
+</li>
+<li><a class="el" href="group__group__avr32__drivers__cpu__cycle__counter.html">CPU - Cycle Counter</a></li>
+<li><a class="el" href="group__group__avr32__drivers__rtc.html">TIMING - RTC - Real Time Counter</a></li>
+<li><a class="el" href="group__group__common__boards.html">Generic board support</a></li>
+<li><a class="el" href="group__group__avr32__drivers__tc.html">TIMING - TC - Timer/Counter</a></li>
+<li><a class="el" href="group__group__avr32__drivers__pm.html">CPU - PM - Power Manager</a><ul>
+<li><a class="el" href="group__group__avr32__drivers__pm__power__clocks__lib.html">Power Clocks Library</a></li>
+</ul>
+</li>
+<li><a class="el" href="group__group__avr32__drivers__gpio.html">GPIO - General-Purpose Input/Output</a></li>
+<li><a class="el" href="group__group__os.html">eeOS</a><ul>
+<li><a class="el" href="group__group__os__config.html">Configuration</a><ul>
+<li><a class="el" href="group__os__scheduler__type.html">Scheduler Type</a></li>
+</ul>
+</li>
+<li><a class="el" href="group__os__hook.html">Hooks</a></li>
+<li><a class="el" href="group__group__os__public__api.html">Public API</a></li>
+<li><a class="el" href="group__os__port__group.html">Porting functions</a></li>
+<li><a class="el" href="group__group__os__internal__api.html">Internal API</a></li>
+</ul>
+</li>
+<li><a class="el" href="group__group__os__debug.html">Debug Mode</a></li>
+<li><a class="el" href="group__sleep__group.html">Power Manager (PM)</a></li>
+<li><a class="el" href="group__group__avr32__utils.html">Compiler abstraction layer and code utilities</a><ul>
+<li><a class="el" href="group__group__avr32__utils__stringz.html">Preprocessor - Stringize</a></li>
+<li><a class="el" href="group__group__avr32__utils__status__codes.html">Status Codes</a></li>
+<li><a class="el" href="group__group__avr32__utils__mrepeat.html">Preprocessor - Macro Repeat</a></li>
+<li><a class="el" href="group__group__avr32__utils__tpaste.html">Preprocessor - Token Paste</a></li>
+</ul>
+</li>
+<li><a class="el" href="group__group__avr32__drivers__flashc.html">MEMORY - FLASHC - Flash Controller</a></li>
+</ul>
 </div>
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
@@ -71,7 +107,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr class="footer"/><address class="footer"><small>Generated on Thu Dec 15 2011 13:05:46 for OS by&#160;
+<hr class="footer"/><address class="footer"><small>Generated on Thu Dec 15 2011 13:05:50 for OS by&#160;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.4 </small></address>
 </body>
