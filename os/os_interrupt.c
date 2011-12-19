@@ -30,18 +30,19 @@ void __os_interrupt_handler(os_ptr_t args)
 	os_switch_context(true);
 }
 
-void os_interrupt_setup(struct os_interrupt *interrupt, os_proc_ptr_t int_ptr,
+void os_interrupt_create(struct os_interrupt *interrupt, os_proc_ptr_t int_ptr,
 		os_ptr_t args)
 {
+	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_CREATE, interrupt);
+
+	// Create the process
+	__os_process_create(os_interrupt_get_process(interrupt), NULL,
+			OS_PROCESS_TYPE_INTERRUPT);
 	// Fill the structure
 	interrupt->int_ptr = int_ptr;
 	interrupt->args = args;
-	// Setup the task to run in the application context
-	os_interrupt_get_process(interrupt)->sp = NULL;
-	// Set process type
-	os_interrupt_get_process(interrupt)->type = OS_PROCESS_TYPE_INTERRUPT;
-#if CONFIG_OS_USE_PRIORITY == true
 	// Set default priority to the interrupt
+#if CONFIG_OS_USE_PRIORITY == true
 	os_interrupt_set_priority(interrupt, CONFIG_OS_INTERRUPT_DEFAULT_PRIORITY);
 #endif
 }

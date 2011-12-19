@@ -13,3 +13,58 @@
  */
 
 #include "os_core.h"
+
+bool os_debug_trace_flag = false;
+struct os_trace *os_debug_trace_ptr;
+static struct os_trace *os_debug_trace_start;
+static struct os_trace *os_debug_trace_end;
+
+void os_debug_trace_log(enum os_debug_trace_event event, os_ptr_t data)
+{
+	/* The following code is only activated if the trace is enabled */
+	if (os_debug_trace_flag) {
+		/* Save the critical region status */
+		bool is_critical = os_is_critical();
+		/* The trace log is a shared variable so this snippet of code
+		 * must run as in a critical region.
+		 */
+		if (!is_critical) {
+			os_enter_critical();
+		}
+		/* Fill in the trace information */
+		os_debug_trace_ptr->time = os_read_cycle_counter();
+		os_debug_trace_ptr->event = event;
+		os_debug_trace_ptr->data = data;
+		/* Increase the trace pointer. The trace is saved in a circular
+		 * buffer, handle the wrapping if any.
+		 */
+		os_debug_trace_ptr++;
+		/* If the new trace pointer is equal to the last trace address,
+		 * we need to wrap.
+		 */
+		if (os_debug_trace_ptr == os_debug_trace_end) {
+			os_debug_trace_ptr = os_debug_trace_start;
+		}
+		/* Leave the critical region if the rest of the code does not
+		 * requires to run inside a critical code region.
+		 */
+		if (!is_critical) {
+			os_leave_critical();
+		}
+	}
+}
+
+void os_debug_start_trace(os_ptr_t buffer, int size)
+{
+	/* Save the first aligned byte of the buffer */
+	os_debug_trace_start = OS_ALIGN(buffer);
+	/* Update the size which might have changed after the alignement */
+	size -= ((int) os_debug_trace_start - (int) buffer);
+	/* Compute the last trace entry ending address */
+	os_debug_trace_end = os_debug_trace_start
+			+ size / sizeof(struct os_trace);
+	/* Setup the trace pointer */
+	os_debug_trace_ptr = os_debug_trace_start;
+	/* Activate the trace */
+	os_debug_trace_flag = true;
+}

@@ -1,8 +1,14 @@
 <asf xmlversion="1.0">
 	<project caption="OS" id="avr32.applications.os.examples.task_switch.evk1105">
+
+		<!-- Configuration //-->
+		<build type="include-path" value="."/>
+		<build type="header-file" value="conf_clock.h"/>
+                <build type="header-file" value="conf_board.h"/>
+                <build type="header-file" value="conf_example.h"/>
+
 		<require idref="avr32.applications.os.examples.task_switch"/>
 		<require idref="board.evk1105"/>
-		<config name="config.board.evk1105.init" value="no"/>
                 <config name="config.avr32.drivers.intc.exception" value="no"/>
 		<generator value="iarew32"/>
 		<generator value="avr32gcc" />

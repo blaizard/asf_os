@@ -19,6 +19,8 @@ void os_task_delay(os_tick_t tick_nb)
 {
 	extern volatile os_tick_t tick_counter;
 
+	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_DELAY_START, tick_nb);
+
 	os_tick_t start_tick, last_tick;
 	start_tick = tick_counter;
 	last_tick = tick_counter + tick_nb;
@@ -31,12 +33,16 @@ void os_task_delay(os_tick_t tick_nb)
 	while (tick_counter < last_tick) {
 		os_yield();
 	}
+
+	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_DELAY_STOP, tick_nb);
 }
 #endif
 
 bool os_task_create(struct os_task *task, os_proc_ptr_t task_ptr, os_ptr_t args,
 		int stack_size, enum os_task_option options)
 {
+	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_CREATE, task);
+
 #if CONFIG_OS_USE_MALLOC == true
 	if (!(options & OS_TASK_USE_CUSTOM_STACK)) {
 		// Allocate memory for the stack size
@@ -45,15 +51,15 @@ bool os_task_create(struct os_task *task, os_proc_ptr_t task_ptr, os_ptr_t args,
 		}
 	}
 #endif
+	// Create the process
+	__os_process_create(os_task_get_process(task), &task->stack[stack_size],
+			OS_PROCESS_TYPE_TASK);
 #if CONFIG_OS_DEBUG == true
 	HOOK_OS_DEBUG_TASK_ADD();
 #endif
 	// Save the options
 	task->options = options;
-	// Move the SP pointer to the end of the stack
-	os_task_get_process(task)->sp = &task->stack[stack_size];
-	// Set process type
-	os_task_get_process(task)->type = OS_PROCESS_TYPE_TASK;
+	// Set the priority of the task
 #if CONFIG_OS_USE_PRIORITY == true
 	os_task_set_priority(task, CONFIG_OS_TASK_DEFAULT_PRIORITY);
 #endif

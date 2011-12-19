@@ -57,7 +57,8 @@
  * \subsubsection section_os_process_interrupt Software Interrupt
  *
  * A \b software \b interrupt (\ref os_interrupt) is a process which will not be
- * interrupted by the process scheduler.
+ * interrupted by the process scheduler. An interrupt uses the same stack as the
+ * application process.
  *
  * \subsection section_os_scheduler Scheduler
  *
@@ -205,6 +206,24 @@
 	#define CONFIG_OS_USE_STATISTICS false
 #endif
 
+/*! \pre \ref CONFIG_OS_USE_STATISTICS must be set
+ * \{
+ */
+
+/*! \def CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH
+ * \brief Give statistics about the task switching.
+ * This enables the following functions:
+ * - \ref os_statistics_get_task_switch_time
+ * - \ref os_statistics_get_task_switch_time_jitter
+ */
+#ifndef CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH
+	#define CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH false //true
+#endif
+
+/*!
+ * \}
+ */
+
 /*!
  * \}
  */
@@ -248,10 +267,16 @@
 
 /*! Helper macro
  */
-#ifndef container_of
-	#define container_of(ptr, type, member) \
-			((type *)((int8_t *)(ptr) - offsetof(type, member)))
-#endif
+#define OS_CONTAINER_OF(ptr, type, member) \
+		((type *)((uint8_t *)(ptr) - offsetof(type, member)))
+
+#define OS_ALIGN(ptr) \
+		((os_ptr_t) ((((os_intptr_t) (ptr)) + OS_COMPILER_ALIGN - 1) & \
+		~(OS_COMPILER_ALIGN - 1)))
+
+#define OS_ALIGN_BACK(ptr) \
+		((os_ptr_t) ((((os_intptr_t) (ptr))) & \
+		~(OS_COMPILER_ALIGN - 1)))
 
 #if CONFIG_OS_USE_PRIORITY == true
 /*! \brief Priority of the task.
@@ -315,6 +340,13 @@ struct os_process {
 	 */
 	enum os_priority priority_counter;
 #endif
+#if CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH == true
+	/*! \brief Internal cycle counter increased during the activity of the
+	 * task. It is used for statistics only. Its value is increased only
+	 * during context switches.
+	 */
+	os_cy_t cycle_counter;
+#endif
 };
 
 /*! \brief Process function prototype
@@ -358,7 +390,7 @@ struct os_process *os_scheduler(void);
  * \param time_ms The time (in ms) to be converted
  * \return The number of ticks
  */
-#define OS_MS_TO_TICK(time_ms) \
+#define OS_MS_TO_TICKS(time_ms) \
 		(((time_ms) * CONFIG_OS_TICK_HZ) / 1000)
 
 /*! \brief Convert a delay in seconds to a number of ticks.
@@ -368,6 +400,31 @@ struct os_process *os_scheduler(void);
  */
 #define OS_S_TO_TICK(time_s) \
 		((time_s) * CONFIG_OS_TICK_HZ)
+
+/*!
+ * \fn os_ptr_t os_malloc(int stack_size)
+ * \brief Allocate some memory for the stack of a task
+ * \ingroup os_port_group
+ * \param stack_size The size in byte of the stack
+ * \return The pointer of the memory allocated, NULL in case of an error.
+ */
+#if CONFIG_OS_USE_CUSTOM_MALLOC == false
+static inline os_ptr_t os_malloc(int stack_size) {
+	return (os_ptr_t) malloc(stack_size);
+}
+#endif
+
+/*!
+ * \fn void os_free(os_ptr_t ptr)
+ * \brief Free memory previously allocated by \ref os_malloc
+ * \ingroup os_port_group
+ * \param ptr The memory to free
+ */
+#if CONFIG_OS_USE_CUSTOM_MALLOC == false
+static inline void os_free(os_ptr_t ptr) {
+	free((void *) ptr);
+}
+#endif
 
 /* Include OS modules */
 #include "os_event.h"
@@ -383,8 +440,8 @@ struct os_process *os_scheduler(void);
  * \return A pointer on the current procress
  */
 static inline struct os_process *os_process_get_current(void) {
-	extern struct os_process *os_current_process;
-	return os_current_process;
+	extern struct os_process *__os_current_process;
+	return __os_current_process;
 }
 
 /*! \brief Check if a process is the application process
@@ -393,8 +450,7 @@ static inline struct os_process *os_process_get_current(void) {
  * \return true if this is the application process, false otherwise
  */
 static inline bool os_process_is_application(struct os_process *proc) {
-	extern struct os_process os_app;
-	return (proc == &os_app);
+	return (proc->type == OS_PROCESS_TYPE_APPLICATION);
 }
 
 /*! \brief Check if a process is a task
@@ -515,18 +571,24 @@ static inline enum os_priority os_process_get_priority(struct os_process *proc) 
  * \}
  */
 
-#include "os_statistics.h"
 #include "os_debug.h"
 #include "os_task.h"
 #include "os_interrupt.h"
 #include "os_semaphore.h"
 #include "os_mutex.h"
+#include "os_statistics.h"
 
 /*! \defgroup os_port_group Porting functions
  * \brief Functions which should be implemented to port this operating system onto
  * another platform.
  * \ingroup group_os
  * \{
+ */
+
+/*!
+ * \fn os_is_critical
+ * \brief Indicates if the CPU is currently running inside a critical region.
+ * \return true if the CPU is running inside a critical region, false otherwise.
  */
 
 /*!
@@ -564,29 +626,6 @@ void os_setup_scheduler(uint32_t ref_hz);
  * \brief Context switch for a process.\n
  * Interrupt handler which is used to schedule and switch between the processes.
  */
-
-/*!
- * \fn os_ptr_t os_malloc(int stack_size)
- * \brief Allocate some memory for the stack of a task
- * \param stack_size The size in byte of the stack
- * \return The pointer of the memory allocated, NULL in case of an error.
- */
-#if CONFIG_OS_USE_CUSTOM_MALLOC == false
-static inline os_ptr_t os_malloc(int stack_size) {
-	return (os_ptr_t) malloc(stack_size);
-}
-#endif
-
-/*!
- * \fn void os_free(os_ptr_t ptr)
- * \brief Free memory previously allocated by \ref os_malloc
- * \param ptr The memory to free
- */
-#if CONFIG_OS_USE_CUSTOM_MALLOC == false
-static inline void os_free(os_ptr_t ptr) {
-	free((void *) ptr);
-}
-#endif
 
 /*!
  * \brief Load the context of a task into the stack. this is the inital process
@@ -647,6 +686,22 @@ static inline struct os_process *os_switch_context_hook(void) {
  * \brief Internal API. These functions should not be used by the user.
  * \{
  */
+
+/*! \brief Initializes a process
+ * \param proc The process to be initialized
+ * \param sp The stack pointer
+ * \param type The type of process
+ */
+static inline void __os_process_create(struct os_process *proc, os_ptr_t sp,
+		enum os_process_type type) {
+	/* Align the stack pointer within the stack. */
+	proc->sp = OS_ALIGN_BACK(sp);
+	proc->type = type;
+#if CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH == true
+	proc->cycle_counter = 0;
+#endif
+}
+
 /*! \brief Get the application process
  * \return the application process
  */
@@ -665,7 +720,9 @@ static inline void __os_process_application_enable(void) {
  */
 static inline void __os_process_application_disable(void) {
 	extern struct os_process os_app;
-	os_process_disable(&os_app);
+	if (os_process_is_application(&os_app)) {
+		os_process_disable(&os_app);
+	}
 }
 /*! \brief Enable the event process
  * If the event process is enabled, the application process will be disabled
@@ -681,7 +738,10 @@ static inline void __os_process_event_enable(void) {
  * as they share the same process.
  */
 static inline void __os_process_event_disable(void) {
-	__os_process_application_disable();
+	extern struct os_process os_app;
+	if (os_process_is_event(&os_app)) {
+		os_process_disable(&os_app);
+	}
 }
 
 /*! \copydoc os_process_enable

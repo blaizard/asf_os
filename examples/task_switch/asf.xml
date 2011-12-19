@@ -5,15 +5,16 @@
 		Simple task switching example
 		</info>
 
-                <!-- OS configuration //-->
-		<build type="header-file" value="conf_os.h"/>
+                <!-- Configuration //-->
                 <build type="include-path" value="."/>
+		<build type="header-file" value="conf_os.h"/>
+                <build type="module-config" subtype="required-header-file" value="conf_example.h"/>
 
                 <build type="c-source" value="main.c"/>
-		<require idref="avr32.drivers.gpio"/>
-		<require idref="avr32.drivers.pm"/>
+		<require idref="common.services.basic.clock"/>
+                <require idref="avr32.drivers.gpio"/>
                 <require idref="avr32.services.os"/>
 
-                <device-support value="uc3a"/>
+                <device-support value="uc3"/>
 	</module>
 </asf>

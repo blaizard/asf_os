@@ -74,7 +74,7 @@ struct os_interrupt {
  * normal function which follow the \ref os_proc_ptr_t prototype)
  * \param args Arguments to pass to the inerrupt handler
  */
-void os_interrupt_setup(struct os_interrupt *interrupt, os_proc_ptr_t int_ptr,
+void os_interrupt_create(struct os_interrupt *interrupt, os_proc_ptr_t int_ptr,
 		os_ptr_t args);
 
 /*! \brief Get the interrupt associated with a process
@@ -82,7 +82,7 @@ void os_interrupt_setup(struct os_interrupt *interrupt, os_proc_ptr_t int_ptr,
  * \return The interrupt pointer
  */
 static inline struct os_interrupt *os_interrupt_from_process(struct os_process *proc) {
-	return container_of(proc, struct os_interrupt, core);
+	return OS_CONTAINER_OF(proc, struct os_interrupt, core);
 }
 
 /*! \brief Get the interrupt process
@@ -96,9 +96,10 @@ static inline struct os_process *os_interrupt_get_process(struct os_interrupt *i
 /*! \brief Manually trigger a software interrupt.
  * \ingroup group_os_public_api
  * \param interrupt The interrupt to trigger
- * \pre The interrupt must be previously setup with \ref os_interrupt_setup
+ * \pre The interrupt must be previously setup with \ref os_interrupt_create
  */
 static inline void os_interrupt_trigger(struct os_interrupt *interrupt) {
+	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_TRIGGER, interrupt);
 	os_process_enable(os_interrupt_get_process(interrupt));
 }
 
@@ -110,6 +111,7 @@ static inline void os_interrupt_trigger(struct os_interrupt *interrupt) {
  * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
  */
 static inline void os_interrupt_set_priority(struct os_interrupt *interrupt, enum os_priority priority) {
+	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_SET_PRIORITY, priority);
 	os_process_set_priority(os_interrupt_get_process(interrupt), priority);
 }
 /*! \brief Get the priority of a software interrupt
@@ -119,7 +121,10 @@ static inline void os_interrupt_set_priority(struct os_interrupt *interrupt, enu
  * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
  */
 static inline enum os_priority os_interrupt_get_priority(struct os_interrupt *interrupt) {
-	return os_process_get_priority(os_interrupt_get_process(interrupt));
+	enum os_priority priority;
+	priority = os_process_get_priority(os_interrupt_get_process(interrupt));
+	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_GET_PRIORITY, priority);
+	return priority;
 }
 #endif
 
@@ -156,12 +161,14 @@ void __os_interrupt_handler(os_ptr_t args);
 #if CONFIG_OS_USE_SW_INTERRUPTS == true
 	#define OS_SCHEDULER_PRE_INTERRUPT_HOOK() \
 		do { \
-			if (os_current_process->sp) \
-				return os_current_process; \
-			os_current_process->sp = os_app.sp; \
-			os_process_context_load(os_current_process, \
+			if (__os_current_process->sp) { \
+				OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_CONTEXT_SWITCH, __os_current_process); \
+				return __os_current_process; \
+			} \
+			__os_current_process->sp = os_app.sp; \
+			os_process_context_load(__os_current_process, \
 					__os_interrupt_handler, \
-					(os_ptr_t) os_current_process); \
+					(os_ptr_t) __os_current_process); \
 		} while (false)
 
 	#define OS_SCHEDULER_POST_INTERRUPT_HOOK() \

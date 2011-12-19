@@ -32,14 +32,21 @@ static enum os_event_status __os_event_mutex_is_triggered(struct os_process *pro
 {
 	enum os_event_status status = OS_EVENT_NONE;
 	struct os_mutex *mutex = (struct os_mutex *) args;
+	/* Save the critical region status */
+	bool is_critical = os_is_critical();
 
-	os_enter_critical();
+	/* Enter in a critical region if not already in */
+	if (!is_critical) {
+		os_enter_critical();
+	}
 	if (!mutex->is_locked) {
 		mutex->is_locked = true;
 		mutex->process = proc;
 		status = OS_EVENT_OK_STOP;
 	}
-	os_leave_critical();
+	if (!is_critical) {
+		os_leave_critical();
+	}
 
 	return status;
 }
@@ -49,13 +56,20 @@ void os_mutex_lock(struct os_mutex *mutex)
 	bool is_taken = false;
 
 	do {
-		os_enter_critical();
+		/* Save the critical region status */
+		bool is_critical = os_is_critical();
+		/* Enter in a critical region if not already in */
+		if (!is_critical) {
+			os_enter_critical();
+		}
 		if (!mutex->is_locked) {
 			mutex->is_locked = true;
 			mutex->process = os_process_get_current();
 			is_taken = true;
 		}
-		os_leave_critical();
+		if (!is_critical) {
+			os_leave_critical();
+		}
 
 		if (!is_taken) {
 			os_yield();
@@ -68,8 +82,15 @@ void os_mutex_unlock(struct os_mutex *mutex)
 {
 	// Only the process which locked the mutex can unlock it
 	if (os_process_get_current() == mutex->process) {
-		os_enter_critical();
+		/* Save the critical region status */
+		bool is_critical = os_is_critical();
+		/* Enter in a critical region if not already in */
+		if (!is_critical) {
+			os_enter_critical();
+		}
 		mutex->is_locked = false;
-		os_leave_critical();
+		if (!is_critical) {
+			os_leave_critical();
+		}
 	}
 }

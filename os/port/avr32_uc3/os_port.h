@@ -70,6 +70,10 @@ static inline void os_leave_critical(void) {
 	cpu_irq_enable();
 };
 
+static inline bool os_is_critical(void) {
+	return !cpu_irq_is_enabled();
+}
+
 #define os_switch_context(bypass_context_saving) \
 	do { \
 		__asm__ __volatile__ ( \
@@ -80,6 +84,7 @@ static inline void os_leave_critical(void) {
 
 #define OS_COMPILER_ALIGN 2
 typedef void * os_ptr_t;
+typedef uint32_t os_intptr_t;
 typedef uint32_t os_reg_t;
 typedef uint32_t os_cy_t;
 

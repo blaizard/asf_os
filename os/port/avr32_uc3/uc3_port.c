@@ -14,14 +14,15 @@
 
 #include "os_core.h"
 
-/*! Push a 32-bit value onto the stack of the task
+/*! \brief Push a 32-bit value onto the stack of the task
  * \param proc The current process holding the stack we want to update
  * \param value The 32-bit value to be pushed
  */
-#define PUSH(proc, value) { \
-	(proc)->sp = (uint32_t *) (proc)->sp - 1; \
-	*((uint32_t *) (proc)->sp) = (uint32_t) (value); \
-}
+#define PUSH(proc, value) \
+		do { \
+			(proc)->sp = (uint32_t *) (proc)->sp - 1; \
+			*((uint32_t *) (proc)->sp) = (uint32_t) (value); \
+		} while (false)
 
 /* Declaration of the interrupt handler function
  */
@@ -150,19 +151,19 @@ __attribute__((__naked__))
 ISR(os_switch_context_int_handler, OS_SCHEDULER_IRQ_GROUP,
 		CONFIG_OS_SCHEDULER_IRQ_PRIORITY)
 {
-	extern struct os_process *os_current_process;
+	extern struct os_process *__os_current_process;
 
 	__asm__ __volatile__ (
 		// Save context
         	"pushm r0-r7\n\t"
 
 		// Save the stack pointer
-		"mov r0, os_current_process\n\t"
+		"mov r0, __os_current_process\n\t"
 		"ld.w r1, r0[0]\n\t"
 		"st.w r1[0], sp\n\t"
 	);
 
-	HOOK_OS_STATISTICS_SWITCH_CONTEXT_START(42);
+	HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_START(20);
 
 	// Clear the interrupt flag
 	os_scheduler_clear_int();
@@ -171,20 +172,19 @@ ISR(os_switch_context_int_handler, OS_SCHEDULER_IRQ_GROUP,
 	__asm__ __volatile__ (
 		// Update the stack pointer
 		"ld.w sp, r12\n\t"
-
-		// Restore context
-		"popm r0-r7\n\t"
 	);
 
-	HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP();
+	HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_STOP(18);
 
 	__asm__ __volatile__ (
+		// Restore context
+		"popm r0-r7\n\t"
 		"rete\n\t"
 	);
 #if __ICCAVR32__
 	#pragma diag_suppress=Pe174
 #endif
-	os_current_process = os_current_process;
+	__os_current_process = __os_current_process;
 #if __ICCAVR32__
 	#pragma diag_default=Pe174
 #endif
@@ -200,7 +200,7 @@ void _os_switch_context(void)
 __exception void _os_switch_context(void)
 #endif
 {
-	extern struct os_process *os_current_process;
+	extern struct os_process *__os_current_process;
 
 	__asm__ __volatile__ (
 #if CONFIG_OS_USE_SW_INTERRUPTS == true
@@ -221,7 +221,7 @@ __exception void _os_switch_context(void)
         	"pushm r0-r7\n\t" // r0-r7
 
 		// Save the stack pointer
-		"mov r0, os_current_process\n\t"
+		"mov r0, __os_current_process\n\t"
 		"ld.w r1, r0[0]\n\t"
 		"st.w r1[0], sp\n"
 
@@ -229,12 +229,18 @@ __exception void _os_switch_context(void)
 		"bypass_context_save:"
 	);
 
+	HOOK_OS_STATISTICS_SWITCH_CONTEXT_START(34);
+
 	os_switch_context_hook();
 
 	__asm__ __volatile__ (
 		// Update the stack pointer
 		"ld.w sp, r12\n\t"
+	);
 
+	HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP(32);
+
+	__asm__ __volatile__ (
 		// Restore context
 		"popm r0-r7\n\t" // r0-r7
 		"ld.d r6, sp++\n\t" // r6 = sr; r7 = pc
@@ -249,13 +255,14 @@ __exception void _os_switch_context(void)
 #if __ICCAVR32__
 	#pragma diag_suppress=Pe174
 #endif
-	os_current_process = os_current_process;
+	__os_current_process = __os_current_process;
 #if __ICCAVR32__
 	#pragma diag_default=Pe174
 #endif
 }
 
-bool os_process_context_load(struct os_process *proc, os_proc_ptr_t proc_ptr, os_ptr_t args)
+bool os_process_context_load(struct os_process *proc, os_proc_ptr_t proc_ptr,
+		os_ptr_t args)
 {
 	PUSH(proc, 0); // R8
 	PUSH(proc, 0); // R9

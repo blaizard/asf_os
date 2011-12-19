@@ -202,13 +202,13 @@ void __os_event_register(struct os_event *event, struct os_process *proc);
 	 */
 	#define OS_SCHEDULER_POST_EVENT_HOOK() \
 		do { \
-			extern struct os_process os_event_alternate_proc; \
-			extern struct os_process *os_current_process; \
-			if (os_event_alternate_proc.next) { \
+			extern struct os_process __os_event_alternate_proc; \
+			extern struct os_process *__os_current_process; \
+			if (__os_event_alternate_proc.next) { \
 				struct os_process *current_proc; \
-				os_current_process = &os_event_alternate_proc; \
+				__os_current_process = &__os_event_alternate_proc; \
 				current_proc = os_scheduler(); \
-				os_event_alternate_proc.next = NULL; \
+				__os_event_alternate_proc.next = NULL; \
 				return current_proc;\
 			} \
 		} while (false)

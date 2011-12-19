@@ -148,7 +148,7 @@ _handle_DTLB_Miss_Write:
 	.org  0x100
 	// Supervisor Call.
 _handle_Supervisor_Call:
-	lda.w   pc, _os_task_switch_context
+	lda.w   pc, _os_switch_context
 
 
 /*

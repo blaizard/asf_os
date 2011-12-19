@@ -15,42 +15,40 @@
 #ifndef __OS_STATISTICS_H__
 #define __OS_STATISTICS_H__
 
-
-/*! \ingroup group_os_config
- * \pre \ref CONFIG_OS_STATISTICS_TASK_SWITCHING must be set
- *
- * \{
- */
-
-/*! \def CONFIG_OS_STATISTICS_TASK_SWITCHING
- * \brief Give statistics about the task switching.
- * This enables the following functions:
- * - \ref os_statistics_get_task_switch_time
- * - \ref os_statistics_get_task_switch_time_jitter
- */
-#ifndef CONFIG_OS_STATISTICS_TASK_SWITCHING
-	#define CONFIG_OS_STATISTICS_TASK_SWITCHING true
-#endif
-
-/*!
- * \}
- */
-
 #if CONFIG_OS_USE_STATISTICS == true
-	#if CONFIG_OS_STATISTICS_TASK_SWITCHING == true
+	#if CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH == true
+		void __os_statistics_switch_context_tick_handler_start(os_cy_t offset_cy);
+		void __os_statistics_switch_context_tick_handler_stop(os_cy_t offset_cy);
 		void __os_statistics_switch_context_start(os_cy_t offset_cy);
-		void __os_statistics_switch_context_stop(void);
+		void __os_statistics_switch_context_stop(os_cy_t offset_cy);
+		/*! \brief Hook use to get a time information at the entrance of
+		 * a context task switch.
+		 * \param offset_cy The number of cycles before the call of
+		 * \ref HOOK_OS_STATISTICS_SWITCH_CONTEXT_START and after the
+		 * call of \ref HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP within
+		 * the context task switch operation.
+		 */
+		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_START(offset_cy) \
+			do { \
+				__os_statistics_switch_context_tick_handler_start(offset_cy); \
+			} while (false)
+		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_STOP(offset_cy) \
+			do { \
+				__os_statistics_switch_context_tick_handler_stop(offset_cy); \
+			} while (false)
 		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_START(offset_cy) \
 			do { \
 				__os_statistics_switch_context_start(offset_cy); \
 			} while (false)
-		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP() \
+		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP(offset_cy) \
 			do { \
-				__os_statistics_switch_context_stop(); \
+				__os_statistics_switch_context_stop(offset_cy); \
 			} while (false)
 	#else
+		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_START(offset_cy)
+		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_STOP(offset_cy)
 		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_START(offset_cy)
-		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP()
+		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP(offset_cy)
 	#endif
 #endif
 
@@ -70,7 +68,7 @@
  * \brief Get the average time of the context task switching in number of cycles
  * \ingroup group_os_public_api
  * \return the number of cycles of the average context switching time
- * \pre \ref CONFIG_OS_STATISTICS_TASK_SWITCHING must be set
+ * \pre \ref CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH must be set
  */
 os_cy_t os_statistics_get_task_switch_time(void);
 
@@ -78,9 +76,18 @@ os_cy_t os_statistics_get_task_switch_time(void);
  * \brief Get the jitter of the context task switching in number of cycles
  * \ingroup group_os_public_api
  * \return the number of cycles of the switching time jitter
- * \pre \ref CONFIG_OS_STATISTICS_TASK_SWITCHING must be set
+ * \pre \ref CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH must be set
  */
 os_cy_t os_statistics_get_task_switch_time_jitter(void);
+
+/*!
+ * \brief Theoretical estimation of the CPU load of a task.
+ * It is based on the number of current active tasks in the list and their
+ * priority.
+ * \param task The task to evaluate
+ * \return The allocation time in percent of the CPU assigned to this task
+ */
+uint8_t os_statistics_task_cpu_allocation(struct os_task *task);
 
 /*!
  * \}

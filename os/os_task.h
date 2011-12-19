@@ -70,7 +70,7 @@ void os_task_delay(os_tick_t tick_nb);
  * \return The task pointer
  */
 static inline struct os_task *os_task_from_process(struct os_process *proc) {
-	return container_of(proc, struct os_task, core);
+	return OS_CONTAINER_OF(proc, struct os_task, core);
 }
 
 /*! \brief Get the task process
@@ -89,6 +89,7 @@ static inline struct os_process *os_task_get_process(struct os_task *task) {
  * \param priority The priority to set
  */
 static inline void os_task_set_priority(struct os_task *task, enum os_priority priority) {
+	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_SET_PRIORITY, priority);
 	os_process_set_priority(os_task_get_process(task), priority);
 }
 /*! \brief Get the priority of a task
@@ -97,7 +98,10 @@ static inline void os_task_set_priority(struct os_task *task, enum os_priority p
  * \return The priority of the task
  */
 static inline enum os_priority os_task_get_priority(struct os_task *task) {
-	return os_process_get_priority(os_task_get_process(task));
+	enum os_priority priority;
+	priority = os_process_get_priority(os_task_get_process(task));
+	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_GET_PRIORITY, priority);
+	return priority;
 }
 #endif
 
@@ -106,10 +110,10 @@ static inline enum os_priority os_task_get_priority(struct os_task *task) {
  * \param task The task to be deleted
  */
 static inline void os_task_delete(struct os_task *task) {
+	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_DELETE, task);
 	os_process_disable(os_task_get_process(task));
 	// Free the task stack if needed
 	if (!(task->options & OS_TASK_USE_CUSTOM_STACK)) {
-		extern void os_free(os_ptr_t ptr);
 		os_free(task->stack);
 	}
 }
@@ -119,6 +123,7 @@ static inline void os_task_delete(struct os_task *task) {
  * \param task The task to be enabled
  */
 static inline void os_task_enable(struct os_task *task) {
+	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_ENABLE, task);
 	os_process_enable(os_task_get_process(task));
 }
 
@@ -127,6 +132,7 @@ static inline void os_task_enable(struct os_task *task) {
  * \param task The task to be disabled
  */
 static inline void os_task_disable(struct os_task *task) {
+	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_DISABLE, task);
 	os_process_disable(os_task_get_process(task));
 }
 

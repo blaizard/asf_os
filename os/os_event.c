@@ -169,13 +169,13 @@ void os_event_scheduler(void)
 	}
 
 	// Loop through the event list
+	os_enter_critical();
 	while (event) {
 		do {
 			// Check if the event has been triggered
 			status = event->desc.is_triggered(event->proc,
 					event->args);
 			if (status != OS_EVENT_NONE) {
-				os_enter_critical();
 				// Remove the process from the event list
 				proc = __os_event_pop_process(event);
 				// If this is the last process, remove the event
@@ -186,12 +186,12 @@ void os_event_scheduler(void)
 				}
 				// Activate the process
 				__os_process_enable(proc);
-				os_leave_critical();
 			}
 		} while (status == OS_EVENT_OK_CONTINUE);
 		// Next event
 		event = event->next;
 	}
+	os_leave_critical();
 
 	// Call the scheduler
 	os_yield();
@@ -231,7 +231,7 @@ void os_event_create_from_function(struct os_event *event,
  * Task API Extension
  * \{
  */
-struct os_process os_event_alternate_proc = {
+struct os_process __os_event_alternate_proc = {
 	.next = NULL
 };
 
@@ -239,34 +239,49 @@ struct os_process os_event_alternate_proc = {
 void os_interrupt_trigger_on_event(struct os_interrupt *interrupt,
 		struct os_event *event)
 {
-	os_enter_critical();
+	/* Save the critical region status */
+	bool is_critical = os_is_critical();
+	/* Enter in a critical region if not already in */
+	if (!is_critical) {
+		os_enter_critical();
+	}
 	__os_event_start(event);
 	__os_event_register(event, os_interrupt_get_process(interrupt));
-	os_leave_critical();
+	if (!is_critical) {
+		os_leave_critical();
+	}
 }
 #endif
 
 void os_task_sleep(struct os_task *task, struct os_event *event)
 {
-	// Start the event
+	/* Save the critical region status */
+	bool is_critical = os_is_critical();
+
+	/* Start the event */
 	__os_event_start(event);
 
-	// Check if the event is already triggered, if not register the event
-	// Doing this does not handle priority if (!__os_event_is_triggered(event)) {
+	/* Enter in a critical region if not already in */
+	if (!is_critical) {
 		os_enter_critical();
-		// If the task is enabled, send it to sleep
-		if (os_task_is_enabled(task)) {
-			__os_process_disable(os_task_get_process(task));
-		}
-		// Save the next current task pointer because it will be erase
-		// by the sleep operation
-		os_event_alternate_proc.next = os_process_get_current()->next;
-		// Associate the task with its event and start it
-		__os_event_register(event, os_task_get_process(task));
-		// Call the scheduler
-		os_switch_context(false);
+	}
+	/* Send the task to sleep if not done already */
+	if (os_task_is_enabled(task)) {
+		__os_process_disable(os_task_get_process(task));
+	}
+	/* Save the next current task pointer because it will be erased
+	 * by the sleep operation if the current process is the process
+	 * to go to sleep.
+	 */
+	__os_event_alternate_proc.next = os_process_get_current()->next;
+	/* Associate the task with its event and start it */
+	__os_event_register(event, os_task_get_process(task));
+	/* Call the scheduler */
+	os_switch_context(false);
+	/* Leave the critical region */
+	if (!is_critical) {
 		os_leave_critical();
-//	}
+	}
 }
 /*!
  * \}

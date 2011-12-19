@@ -35,11 +35,14 @@ struct os_process os_app = {
 	.priority = OS_PRIORITY_1,
 	.priority_counter = OS_PRIORITY_1,
 #endif
+#if CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH == true
+	.cycle_counter = 0,
+#endif
 };
 
 /*! \brief Current process running
  */
-struct os_process *os_current_process = &os_app;
+struct os_process *__os_current_process = &os_app;
 
 #if CONFIG_OS_USE_TICK_COUNTER == true
 /*! \brief Tick counter
@@ -52,24 +55,26 @@ struct os_process *os_scheduler(void)
 {
 	do {
 		// Get the next process
-		os_current_process = os_current_process->next;
+		__os_current_process = __os_current_process->next;
 		// Check wether its priority counter is null
-		if (!os_current_process->priority_counter) {
-			os_current_process->priority_counter =
-					os_current_process->priority;
+		if (__os_current_process->priority_counter == 0) {
+			__os_current_process->priority_counter =
+					__os_current_process->priority;
 			OS_SCHEDULER_PRE_INTERRUPT_HOOK();
-			return os_current_process;
+			OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_CONTEXT_SWITCH, __os_current_process);
+			return __os_current_process;
 		}
 		// Decrease the priority counter
-		os_current_process->priority_counter--;
+		__os_current_process->priority_counter--;
 	} while (true);
 }
 #else
 struct os_process *os_scheduler(void)
 {
-	os_current_process = os_current_process->next;
+	__os_current_process = __os_current_process->next;
 	OS_SCHEDULER_PRE_INTERRUPT_HOOK();
-	return os_current_process;
+	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_CONTEXT_SWITCH, __os_current_process);
+	return __os_current_process;
 }
 #endif
 
@@ -78,16 +83,11 @@ void __os_process_enable(struct os_process *proc)
 	struct os_process *last_proc = proc;
 
 	// Look for the last process registered
-	last_proc = os_current_process->next;
-	while (last_proc->next != os_current_process->next) {
+	last_proc = __os_current_process->next;
+	while (last_proc->next != __os_current_process->next) {
 		last_proc = last_proc->next;
 	}
-	// Add the process to the chain list. Different behavior regarding the
-	// application task because for the event handler uses this proc to run
-#if CONFIG_OS_USE_EVENTS == true
-	// The application process is disabled in the event scheduler
-	proc->next = last_proc->next;
-#else
+	// Add the process to the chain list.
 	// If the application process is running, remove it from the active process
 	// list
 	if (os_process_is_application(last_proc)) {
@@ -96,19 +96,23 @@ void __os_process_enable(struct os_process *proc)
 	else {
 		proc->next = last_proc->next;
 	}
-#endif
 	last_proc->next = proc;
 }
 
 void os_process_enable(struct os_process *proc)
 {
+	bool is_critical = os_is_critical();
 	// The following code is critical
-	os_enter_critical();
+	if (!is_critical) {
+		os_enter_critical();
+	}
 	// Make sure the task is not already enabled
 	if (!os_process_is_enabled(proc)) {
 		__os_process_enable(proc);
 	}
-	os_leave_critical();
+	if (!is_critical) {
+		os_leave_critical();
+	}
 }
 
 bool os_process_is_enabled(struct os_process *proc)
@@ -116,13 +120,13 @@ bool os_process_is_enabled(struct os_process *proc)
 	// Starts from the "next" element.
 	// There is maximum 1 element on the path before reaching the circular
 	// chain buffer.
-	struct os_process *last_proc = os_current_process->next;
+	struct os_process *last_proc = __os_current_process->next;
 	do {
 		if (last_proc == proc) {
 			return true;
 		}
 		last_proc = last_proc->next;
-	} while (last_proc != os_current_process->next);
+	} while (last_proc != __os_current_process->next);
 	return false;
 }
 
@@ -149,19 +153,31 @@ void __os_process_disable(struct os_process *proc)
 
 void os_process_disable(struct os_process *proc)
 {
-	// Unregister this process from the active process list
-	os_enter_critical();
+	bool is_critical = os_is_critical();
+	// The following code is critical
+	if (!is_critical) {
+		os_enter_critical();
+	}
 	// Make sure the process is enabled
 	if (os_process_is_enabled(proc)) {
 		__os_process_disable(proc);
 	}
 	os_switch_context(false);
-	os_leave_critical();
+	if (!is_critical) {
+		os_leave_critical();
+	}
 }
 
 void os_yield(void)
 {
-	os_enter_critical();
+	bool is_critical = os_is_critical();
+	// The following code is critical
+	if (!is_critical) {
+		os_enter_critical();
+	}
+	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_YIELD, __os_current_process);
 	os_switch_context(false);
-	os_leave_critical();
+	if (!is_critical) {
+		os_leave_critical();
+	}
 }
