@@ -1,6 +1,6 @@
 <asf xmlversion="1.0">
-	<select-by-device id="avr32.services.os.port" caption="Operating System port">
-                <module type="meta" id="avr32.services.os.port#uc3" caption="Operating System port for ucr1">
+	<select-by-device id="common.services.os.port" caption="Operating System port">
+                <module type="meta" id="common.services.os.port#uc3" caption="Operating System port for ucr1">
 			<!-- Port source //-->
 			<build type="c-source" value="port/avr32_uc3/exception.S" toolchain="avr32gcc"/>
 			<build type="c-source" value="port/avr32_uc3/uc3_port.c"/>
@@ -17,7 +17,7 @@
 	</select-by-device>
 
 
-	<module type="service" id="avr32.services.os" caption="Operating System">
+	<module type="service" id="common.services.os" caption="Operating System">
 		<device-support value="uc3a"/>
 
 		<info type="description" value="summary">
@@ -48,6 +48,6 @@
 
                 <!-- OS porting functions //-->
                 <build type="module-config" subtype="required-header-file" value="os_port.h"/>
-		<require idref="avr32.services.os.port"/>
+		<require idref="common.services.os.port"/>
 	</module>
 </asf>

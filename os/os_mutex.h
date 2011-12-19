@@ -24,6 +24,9 @@ struct os_mutex {
 	/*! \brief The process which locked the mutex
 	 */
 	struct os_process *process;
+	/*! \brief Next processes on the waiting list
+	 */
+	struct os_process *next;
 };
 
 /*! \name Mutex
@@ -39,6 +42,7 @@ struct os_mutex {
  */
 static inline void os_mutex_create(struct os_mutex *mutex) {
 	mutex->is_locked = false;
+	mutex->next = NULL;
 }
 
 /*! \brief Creates an event from a mutex. The mutex must have been

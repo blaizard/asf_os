@@ -1,20 +1,53 @@
 <asf xmlversion="1.0">
-	<module type="application" id="avr32.applications.os.examples.task_switch" caption="OS">
+	<module type="meta" id="common.applications.os.examples.common" caption="Common modules for the OS examples">
+		<!-- Configuration //-->
+		<build type="module-config" subtype="required-header-file" value="conf_example.h"/>
+		<!-- Dependencies //-->
+		<require idref="common.services.basic.clock"/>
+                <require idref="common.services.os"/>
+		<require idref="avr32.drivers.gpio"/>
+		<device-support value="avr"/>
+	</module>
 
+	<module type="application" id="common.applications.os.examples.task_switch" caption="Task switching example">
+		<!-- Meta information //-->
 		<info type="description" value="summary">
 		Simple task switching example
 		</info>
-
-		<!-- Configuration //-->
+                <device-support value="avr"/>
+                <!-- Example specific //-->
 		<build type="include-path" value="./conf_task_switch"/>
 		<build type="header-file" value="conf_task_switch/conf_os.h"/>
-		<build type="module-config" subtype="required-header-file" value="conf_example.h"/>
+		<build type="c-source" value="task_switch.c"/>
+		<!-- Common dependencies //-->
+                <require idref="common.applications.os.examples.common"/>
+	</module>
 
-		<build type="c-source" value="main.c"/>
-		<require idref="common.services.basic.clock"/>
-		<require idref="avr32.drivers.gpio"/>
-		<require idref="avr32.services.os"/>
+	<module type="application" id="common.applications.os.examples.mutex" caption="Mutex example">
+		<!-- Meta information //-->
+		<info type="description" value="summary">
+		Mutex example
+		</info>
+                <device-support value="avr"/>
+                <!-- Example specific //-->
+		<build type="include-path" value="./conf_mutex"/>
+		<build type="header-file" value="conf_mutex/conf_os.h"/>
+		<build type="c-source" value="mutex.c"/>
+		<!-- Common dependencies //-->
+                <require idref="common.applications.os.examples.common"/>
+	</module>
 
-		<device-support value="uc3"/>
+	<module type="application" id="common.applications.os.examples.semaphore" caption="Semaphore example">
+		<!-- Meta information //-->
+		<info type="description" value="summary">
+		Semaphore example
+		</info>
+                <device-support value="avr"/>
+                <!-- Example specific //-->
+		<build type="include-path" value="./conf_semaphore"/>
+		<build type="header-file" value="conf_semaphore/conf_os.h"/>
+		<build type="c-source" value="semaphore.c"/>
+		<!-- Common dependencies //-->
+                <require idref="common.applications.os.examples.common"/>
 	</module>
 </asf>

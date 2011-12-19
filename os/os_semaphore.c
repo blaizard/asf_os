@@ -62,29 +62,32 @@ static enum os_event_status os_event_sempahore_is_triggered(struct os_process *p
 
 void os_semaphore_take(struct os_semaphore *sem)
 {
-	bool is_taken = false;
+	/* Save the critical region status */
+	bool is_critical = os_is_critical();
 
-	do {
-		/* Save the critical region status */
-		bool is_critical = os_is_critical();
-
-		/* Enter in a critical region if not already in */
-		if (!is_critical) {
-			os_enter_critical();
-		}
-		if (sem->counter > 0) {
-			sem->counter--;
-			is_taken = true;
-		}
-		if (!is_critical) {
-			os_leave_critical();
-		}
-
-		if (!is_taken) {
-			os_yield();
-		}
-
-	} while (!is_taken);
+	/* Enter in a critical region if not already in */
+	if (!is_critical) {
+		os_enter_critical();
+	}
+	/* If all the semaphores are not taken, take one */
+	if (sem->counter > 0) {
+		/* Decrease the semaphore counter */
+		sem->counter--;
+	}
+	/* If the all the semaphores are taken, suspend this task */
+	else {
+		/* Disable this process */
+		__os_process_disable(os_process_get_current());
+		/* Add this process to the event list of the sempahore */
+		os_waiting_list_add(&sem->next,
+				os_process_get_current());
+		/* Manually switch the process context */
+		os_switch_context(false);
+	}
+	/* Leave the critical region unless the CPU was previously in */
+	if (!is_critical) {
+		os_leave_critical();
+	}
 }
 
 void os_semaphore_release(struct os_semaphore *sem)
@@ -96,9 +99,22 @@ void os_semaphore_release(struct os_semaphore *sem)
 	if (!is_critical) {
 		os_enter_critical();
 	}
-	if (sem->counter < sem->max) {
+	/* Check if there is another process in the waiting list */
+	if (sem->next) {
+		struct os_process *proc;
+		/* Pop the next process in the waiting list */
+		proc = os_waiting_list_pop(&sem->next);
+		/* Enable this process */
+		__os_process_enable(proc);
+	}
+	/* Else check if the sempahore counter is not above the limit */
+	else if (sem->counter < sem->max) {
+		/* Increase the semaphore counter, in other word, release the
+		 * semaphore previously taken.
+		 */
 		sem->counter++;
 	}
+	/* Leave the critical region unless the CPU was previously in */
 	if (!is_critical) {
 		os_leave_critical();
 	}

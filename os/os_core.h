@@ -329,6 +329,11 @@ struct os_process {
 	 * Active processes are registered within a chain list.
 	 */
 	struct os_process *next;
+	/*! \brief Pointer of the next process in the event list.
+	 * This pointer is used for any kind of event and not necessarily with
+	 * the event module.
+	 */
+	struct os_process *event_next;
 	/*! \brief The type of the process
 	 */
 	enum os_process_type type;

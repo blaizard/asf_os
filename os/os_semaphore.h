@@ -24,6 +24,9 @@ struct os_semaphore {
 	/*! \brief Maximum semaphore available
 	 */
 	uint16_t max;
+	/*! \brief Next processes on the waiting list
+	 */
+	struct os_process *next;
 };
 
 /*! \name Semaphores
@@ -44,6 +47,7 @@ static inline void os_semaphore_create(struct os_semaphore *sem, uint16_t counte
 		uint16_t initial_count) {
 	sem->counter = initial_count;
 	sem->max = counter;
+	sem->next = NULL;
 }
 
 /*! \brief Creates a binary semaphore

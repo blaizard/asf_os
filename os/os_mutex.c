@@ -53,34 +53,37 @@ static enum os_event_status __os_event_mutex_is_triggered(struct os_process *pro
 
 void os_mutex_lock(struct os_mutex *mutex)
 {
-	bool is_taken = false;
+	/* Save the critical region status */
+	bool is_critical = os_is_critical();
 
-	do {
-		/* Save the critical region status */
-		bool is_critical = os_is_critical();
-		/* Enter in a critical region if not already in */
-		if (!is_critical) {
-			os_enter_critical();
-		}
-		if (!mutex->is_locked) {
-			mutex->is_locked = true;
-			mutex->process = os_process_get_current();
-			is_taken = true;
-		}
-		if (!is_critical) {
-			os_leave_critical();
-		}
-
-		if (!is_taken) {
-			os_yield();
-		}
-
-	} while (!is_taken);
+	/* Enter in a critical region if not already in */
+	if (!is_critical) {
+		os_enter_critical();
+	}
+	/* If the mutex is not locked, lock it */
+	if (!mutex->is_locked) {
+		mutex->is_locked = true;
+		mutex->process = os_process_get_current();
+	}
+	/* If the mutex is already locked, suspend this task */
+	else {
+		/* Disable this process */
+		__os_process_disable(os_process_get_current());
+		/* Add this process to the event list of the mutex */
+		os_waiting_list_add(&mutex->next,
+				os_process_get_current());
+		/* Manually switch the process context */
+		os_switch_context(false);
+	}
+	/* Leave the critical region unless the CPU was previously in */
+	if (!is_critical) {
+		os_leave_critical();
+	}
 }
 
 void os_mutex_unlock(struct os_mutex *mutex)
 {
-	// Only the process which locked the mutex can unlock it
+	/* Only the process which locked the mutex can unlock it */
 	if (os_process_get_current() == mutex->process) {
 		/* Save the critical region status */
 		bool is_critical = os_is_critical();
@@ -88,7 +91,21 @@ void os_mutex_unlock(struct os_mutex *mutex)
 		if (!is_critical) {
 			os_enter_critical();
 		}
-		mutex->is_locked = false;
+		/* Check if there is another process in the waiting list */
+		if (mutex->next) {
+			struct os_process *proc;
+			/* Pop the next process in the waiting list */
+			proc = os_waiting_list_pop(&mutex->next);
+			/* Lock the mutex for this process */
+			mutex->process = proc;
+			/* Enable this process */
+			__os_process_enable(proc);
+		}
+		/* Else unlock the mutex */
+		else {
+			mutex->is_locked = false;
+		}
+		/* Leave the critical region unless the CPU was previously in */
 		if (!is_critical) {
 			os_leave_critical();
 		}

@@ -1,5 +1,5 @@
 /*! \file
- * \brief Simple task switching example
+ * \brief Semaphore example
  * \author Blaise Lengrand (blaise.lengrand@gmail.com)
  * \version 0.1
  * \date 2011
@@ -22,6 +22,8 @@
 
 #define MAX_DELAY_MS 500
 
+static struct os_semaphore semaphore;
+
 struct task_args {
 	uint32_t pin;
 	os_tick_t tick_nb;
@@ -31,8 +33,10 @@ void led_blink(os_ptr_t raw_args)
 {
 	struct task_args *args = (struct task_args *) raw_args;
 	while (true) {
+		os_semaphore_take(&semaphore);
 		gpio_tgl_gpio_pin(args->pin);
 		os_task_delay(args->tick_nb);
+		os_semaphore_release(&semaphore);
 	}
 }
 
@@ -45,9 +49,12 @@ int main(void)
 	sysclk_init();
 	board_init();
 
+	os_semaphore_create(&semaphore, EXAMPLE_NB_TASKS / 2,
+			EXAMPLE_NB_TASKS / 2);
+
 	for (i=0; i<EXAMPLE_NB_TASKS; i++) {
 		args[i].pin = example_pins[i];
-		args[i].tick_nb = OS_MS_TO_TICKS(MAX_DELAY_MS / (i + 1));
+		args[i].tick_nb = OS_MS_TO_TICKS(MAX_DELAY_MS);
 		os_task_create(&tasks[i], led_blink, &args[i], 200,
 				OS_TASK_DEFAULT);
 	}

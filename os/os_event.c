@@ -32,15 +32,9 @@ void os_event_create(struct os_event *event,
  * \{
  */
 
-static inline struct os_process *__os_event_pop_process(struct os_event *event) {
-	struct os_process *proc = event->proc;
-	event->proc = proc->next;
-	return proc;
-}
-
 /*! \note event MUST be in the event list
  */
-static inline void __os_event_pop(struct os_event *event) {
+static inline void os_event_pop(struct os_event *event) {
 	struct os_event *prev_event = os_current_event;
 	// If the event is the 1rst one
 	if (event == os_current_event) {
@@ -55,16 +49,40 @@ static inline void __os_event_pop(struct os_event *event) {
 	}
 }
 
-static inline void __os_event_insert_process_after(struct os_process *proc,
-		struct os_process *new_proc) {
-	new_proc->next = proc->next;
-	proc->next = new_proc;
+void os_waiting_list_add(struct os_process **first_proc,
+		struct os_process *proc)
+{
+	bool (*sort_fct)(struct os_process *, struct os_process *);
+
+	// Get the appropriate sorting function
+#if CONFIG_OS_USE_PRIORITY == true
+	sort_fct = os_event_sort_priority;
+#else
+	sort_fct = os_event_sort_fifo;
+#endif
+
+	os_waiting_list_add_sort(first_proc, proc, sort_fct);
 }
 
-static inline void __os_event_insert_process_begining(struct os_event *event,
-		struct os_process *proc) {
-	proc->next = event->proc;
-	event->proc = proc;
+void os_waiting_list_add_sort(struct os_process **first_proc,
+		struct os_process *proc,
+		bool (*sort_fct)(struct os_process *, struct os_process *))
+{
+	struct os_process *current_proc;
+	struct os_process *prev_proc = NULL;
+	/* Add the process to the list */
+	current_proc = *first_proc;
+	while (current_proc && sort_fct(current_proc, proc)) {
+		prev_proc = current_proc;
+		current_proc = current_proc->event_next;
+	}
+	// If the process is supposed to be at the beginning of the list
+	if (prev_proc) {
+		os_waiting_list_insert_after(prev_proc, proc);
+	}
+	else {
+		os_waiting_list_insert_first(first_proc, proc);
+	}
 }
 
 static inline void __os_event_enable(struct os_event *event) {
@@ -110,8 +128,6 @@ bool os_event_sort_priority(struct os_process *proc1,
 void __os_event_register(struct os_event *event, struct os_process *proc)
 {
 	struct os_event *current_event;
-	struct os_process *prev_proc = NULL;
-	struct os_process *current_proc;
 	bool (*sort_fct)(struct os_process *, struct os_process *);
 
 	// Get the appropriate sorting function
@@ -129,18 +145,7 @@ void __os_event_register(struct os_event *event, struct os_process *proc)
 	__os_process_event_enable();
 
 	// Add the process to the event sorted process list
-	current_proc = event->proc;
-	while (current_proc && sort_fct(current_proc, proc)) {
-		prev_proc = current_proc;
-		current_proc = current_proc->next;
-	}
-	// If the process is supposed to be at the beginning of the list
-	if (prev_proc) {
-		__os_event_insert_process_after(prev_proc, proc);
-	}
-	else {
-		__os_event_insert_process_begining(event, proc);
-	}
+	os_waiting_list_add_sort(&event->proc, proc, sort_fct);
 
 	// Add this event to the event list if not done already
 	current_event = os_current_event;
@@ -177,12 +182,12 @@ void os_event_scheduler(void)
 					event->args);
 			if (status != OS_EVENT_NONE) {
 				// Remove the process from the event list
-				proc = __os_event_pop_process(event);
+				proc = os_waiting_list_pop(&event->proc);
 				// If this is the last process, remove the event
 				// from the list
-				if (!proc->next) {
+				if (!proc->event_next) {
 					status = OS_EVENT_OK_STOP;
-					__os_event_pop(event);
+					os_event_pop(event);
 				}
 				// Activate the process
 				__os_process_enable(proc);
@@ -231,9 +236,6 @@ void os_event_create_from_function(struct os_event *event,
  * Task API Extension
  * \{
  */
-struct os_process __os_event_alternate_proc = {
-	.next = NULL
-};
 
 #if CONFIG_OS_USE_SW_INTERRUPTS == true
 void os_interrupt_trigger_on_event(struct os_interrupt *interrupt,
@@ -269,11 +271,6 @@ void os_task_sleep(struct os_task *task, struct os_event *event)
 	if (os_task_is_enabled(task)) {
 		__os_process_disable(os_task_get_process(task));
 	}
-	/* Save the next current task pointer because it will be erased
-	 * by the sleep operation if the current process is the process
-	 * to go to sleep.
-	 */
-	__os_event_alternate_proc.next = os_process_get_current()->next;
 	/* Associate the task with its event and start it */
 	__os_event_register(event, os_task_get_process(task));
 	/* Call the scheduler */

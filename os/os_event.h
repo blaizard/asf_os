@@ -120,6 +120,43 @@ struct os_event {
 	os_ptr_t args;
 };
 
+/*! \name Process waiting list helper function set
+ *
+ * \{
+ */
+/*! \brief
+ */
+static inline struct os_process *os_waiting_list_pop(
+		struct os_process **first_proc) {
+	struct os_process *proc = *first_proc;
+	*first_proc = proc->event_next;
+	return proc;
+}
+
+static inline void os_waiting_list_insert_after(
+		struct os_process *proc,
+		struct os_process *new_proc) {
+	new_proc->event_next = proc->event_next;
+	proc->event_next = new_proc;
+}
+
+static inline void os_waiting_list_insert_first(
+		struct os_process **first_proc,
+		struct os_process *proc) {
+	proc->event_next = *first_proc;
+	*first_proc = proc;
+}
+
+void os_waiting_list_add(struct os_process **first_proc,
+		struct os_process *proc);
+
+void os_waiting_list_add_sort(struct os_process **first_proc,
+		struct os_process *proc,
+		bool (*sort_fct)(struct os_process *, struct os_process *));
+/*!
+ * \}
+ */
+
 /*! \name Events
  *
  * Set of functions to create and manage events
@@ -193,25 +230,5 @@ void os_event_create(struct os_event *event,
  * \param proc The process to add
  */
 void __os_event_register(struct os_event *event, struct os_process *proc);
-
-#if CONFIG_OS_USE_EVENTS == true
-	/*! This macro will test if a alternative current process is needed.
-	 * It will restore the next current process previously erased by
-	 * os_task_sleep, call the scheduler and clear the flag to prevent the
-	 * next iteration to use it.
-	 */
-	#define OS_SCHEDULER_POST_EVENT_HOOK() \
-		do { \
-			extern struct os_process __os_event_alternate_proc; \
-			extern struct os_process *__os_current_process; \
-			if (__os_event_alternate_proc.next) { \
-				struct os_process *current_proc; \
-				__os_current_process = &__os_event_alternate_proc; \
-				current_proc = os_scheduler(); \
-				__os_event_alternate_proc.next = NULL; \
-				return current_proc;\
-			} \
-		} while (false)
-#endif
 
 #endif // __OS_EVENT_H__
