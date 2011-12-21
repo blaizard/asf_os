@@ -62,11 +62,8 @@ struct os_event_descriptor {
 	 * using the \ref os_queue_sort_fifo algorithm or the
 	 * \ref os_queue_process_sort_priority alorithm, depending if priorities
 	 * are enabled or not.
-	 * \param a The first process used in the comparison
-	 * \param b The second process used in the comparison
-	 * \return true if proc1 should be placed before proc2, false otherwise.
 	 */
-	bool (*sort)(struct os_queue *a, struct os_queue *b);
+	os_queue_bidirectional_sort_t sort;
 	/*! \brief This function will handle the setup of the event. For
 	 * example, if the event is a timer, the timer will start to run after
 	 * the call of this function.
@@ -101,7 +98,11 @@ struct os_event_descriptor {
  * When an event has no process, it is removed from the active event list.
  */
 
-OS_QUEUE_DEFINE(event, struct os_process *proc; struct os_event **event_triggered;)
+OS_QUEUE_BIDIRECTIONAL_DEFINE(event,
+	struct os_process *proc;
+	struct os_event **event_triggered;
+	struct os_queue_event *relation;
+)
 
 /*! \brief Event structure
  */
@@ -113,7 +114,7 @@ struct os_event {
 	/*! \brief This is the starting point of the process chain list associated
 	 * with this event. The last process is followed by a NULL pointer.
 	 */
-	struct os_queue_event *queue;
+	struct os_queue_bidirectional queue;
 	/*! \brief Next event in the chain list. Last event is followed by a
 	 * NULL pointer.
 	 */
@@ -170,8 +171,12 @@ void os_event_scheduler(void);
 void os_event_create(struct os_event *event,
 		const struct os_event_descriptor *descriptor, os_ptr_t args);
 
+static inline bool os_event_is_empty(struct os_event *event) {
+	return (bool) !(event->queue.next);
+}
+
 static inline bool os_event_is_enabled(struct os_event *event) {
-	return (bool) (event->queue);
+	return (bool) (event->queue.next);
 }
 
 struct os_event *os_process_sleep(struct os_process *proc,
@@ -188,5 +193,13 @@ struct os_event *os_process_sleep(struct os_process *proc,
  */
 void __os_event_register(struct os_event *event, struct os_queue_event *queue_elt,
 		struct os_process *proc, struct os_event **event_triggered);
+
+static inline struct os_queue_event *os_event_get_queue(struct os_event *event) {
+	return (struct os_queue_event *) event->queue.next;
+}
+
+static inline struct os_queue_event **os_event_get_queue_ptr(struct os_event *event) {
+	return (struct os_queue_event **) &event->queue.next;
+}
 
 #endif // __OS_EVENT_H__

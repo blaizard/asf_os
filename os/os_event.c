@@ -27,7 +27,8 @@ void os_event_create(struct os_event *event,
 	event->desc.is_triggered = descriptor->is_triggered;
 	event->args = args;
 	/* Mark this event as disabled */
-	event->queue = NULL;
+	event->queue.next = NULL;
+	event->queue.prev = NULL;
 }
 
 /*! Private helper functions
@@ -91,21 +92,30 @@ void os_event_scheduler(void)
 	while (event) {
 		do {
 			/* If the queue is not empty */
-			if (event->queue) {
+			if (!os_event_is_empty(event)) {
 				struct os_queue_event *queue_elt;
 				/* Get the head element of the queue */
-				queue_elt = os_queue_event_head(event->queue);
+				queue_elt = os_queue_event_head(os_event_get_queue(event));
 				/* Make sure the process is in pending state */
 				if (os_process_is_pending(queue_elt->proc)) {
 					// Check if the event has been triggered
 					status = event->desc.is_triggered(queue_elt->proc, event->args);
 					if (status != OS_EVENT_NONE) {
+						struct os_queue_event *current_elt;
 						/* Update the event feedback variable */
 						*queue_elt->event_triggered = event;
 						// Remove the process from the event list;
-						os_queue_event_pop(&event->queue);
+						os_queue_event_pop(os_event_get_queue_ptr(event));
 						// Activate the process
 						__os_process_enable(queue_elt->proc);
+						/* Garbage collect, remove the other
+						 * queue entries associated to this process
+						 */
+						current_elt = queue_elt->relation;
+						while (current_elt != queue_elt) {
+							os_queue_event_remove(current_elt);
+							current_elt = current_elt->relation;
+						}
 					}
 				}
 				/* If the process is pending, pop this process out
@@ -115,7 +125,7 @@ void os_event_scheduler(void)
 					/* Remove the not pending process from
 					 * the list.
 					 */
-					os_queue_event_pop(&event->queue);
+					os_queue_event_pop(os_event_get_queue_ptr(event));
 					/* Continue processing the next process
 					 * in the list.
 					 */
@@ -125,7 +135,7 @@ void os_event_scheduler(void)
 			/* The process queue of the current even is empty,
 			 * remove this event from the active event list.
 			 */
-			if (!event->queue) {
+			if (os_event_is_empty(event)) {
 				status = OS_EVENT_NONE;
 				os_event_pop(event);
 			}
@@ -133,16 +143,7 @@ void os_event_scheduler(void)
 		// Next event
 		event = event->next;
 	}
-	/* Garbage collector.
-	 * Remove processes that are not pending anymore.
-	 */
-	/*if (garbage_collector) {
-		event = os_current_event;
-		while (event) {
-			proc = os_queue_head(event->queue);
-		}
-	}*/
-	
+
 	os_leave_critical();
 
 	// Call the scheduler
@@ -182,13 +183,13 @@ void os_event_create_from_function(struct os_event *event,
 void __os_event_register(struct os_event *event, struct os_queue_event *queue_elt,
 		struct os_process *proc, struct os_event **event_triggered)
 {
-	bool (*sort_fct)(struct os_queue *, struct os_queue *);
+	os_queue_bidirectional_sort_t sort_fct;
 
 	// Get the appropriate sorting function
 #if CONFIG_OS_USE_PRIORITY == true
-	sort_fct = os_queue_process_sort_priority;
+	sort_fct = os_queue_bidirectional_process_sort_priority;
 #else
-	sort_fct = os_queue_sort_fifo;
+	sort_fct = (os_queue_bidirectional_sort_t) os_queue_sort_fifo;
 #endif
 	if (event->desc.sort) {
 		sort_fct = event->desc.sort;
@@ -209,7 +210,7 @@ void __os_event_register(struct os_event *event, struct os_queue_event *queue_el
 	queue_elt->event_triggered = event_triggered;
 
 	// Add the process to the event sorted process list
-	os_queue_event_add_sort(&event->queue, queue_elt, sort_fct);
+	os_queue_event_add_sort(os_event_get_queue_ptr(event), queue_elt, sort_fct);
 }
 
 #if CONFIG_OS_USE_SW_INTERRUPTS == true
@@ -236,7 +237,7 @@ struct os_event *os_process_sleep(struct os_process *proc,
 		struct os_queue_event *queue_elt, int nb_events, ...)
 {
 	int i;
-	va_list ap, aq;
+	va_list ap;
 	struct os_event *event, *event_triggered = NULL;
 	/* Save the critical region status */
 	bool is_critical = os_is_critical();
@@ -259,8 +260,10 @@ struct os_event *os_process_sleep(struct os_process *proc,
 	 */
 	event_triggered = NULL;
 
+	/* Initialize relation pointer between the queue elements */
+	queue_elt[0].relation = &queue_elt[0];
+
 	va_start(ap, nb_events);
-	va_copy(aq, ap);
 	i = nb_events;
 	while (i--) {
 		/* Get the next event from the list */
@@ -269,6 +272,11 @@ struct os_event *os_process_sleep(struct os_process *proc,
 		__os_event_start(event, proc);
 		/* Register the process in the active event list */
 		__os_event_register(event, &queue_elt[i], proc, &event_triggered);
+		/* Build a relation between the processes registered */
+		if (i) {
+			queue_elt[i].relation = queue_elt[0].relation;
+			queue_elt[0].relation = &queue_elt[i];
+		}
 	}
 	va_end(ap);
 
@@ -276,21 +284,8 @@ struct os_event *os_process_sleep(struct os_process *proc,
 	 * and use a garbage collector wipe out the extra events registered.
 	 */
 	if (proc == os_process_get_current()) {
-
 		/* Call the scheduler */
 		os_switch_context(false);
-
-		/* Garbage collector, remove the entries from the queue which
-		 * correspond to this process.
-		 */
-		i = nb_events;
-		while (i--) {
-			/* Get the next event from the list */
-			event = va_arg(aq, struct os_event *);
-			/* Remove the process from the queue */
-			os_queue_event_remove(&event->queue, &queue_elt[i]);
-		}
-		va_end(aq);
 	}
 
 	/* Leave the critical region */
