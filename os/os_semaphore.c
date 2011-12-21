@@ -76,11 +76,14 @@ void os_semaphore_take(struct os_semaphore *sem)
 	}
 	/* If the all the semaphores are taken, suspend this task */
 	else {
+		/* Queue element used to hold the process in the waiting list */
+		struct os_queue_process queue_elt;
 		/* Disable this process */
 		__os_process_disable(os_process_get_current());
+		/* Assign the data associated to this queue entry */
+		queue_elt.proc = os_process_get_current();
 		/* Add this process to the event list of the sempahore */
-		os_waiting_list_add(&sem->next,
-				os_process_get_current());
+		os_queue_process_add(&sem->queue, &queue_elt);
 		/* Manually switch the process context */
 		os_switch_context(false);
 	}
@@ -100,10 +103,10 @@ void os_semaphore_release(struct os_semaphore *sem)
 		os_enter_critical();
 	}
 	/* Check if there is another process in the waiting list */
-	if (sem->next) {
+	if (sem->queue) {
 		struct os_process *proc;
 		/* Pop the next process in the waiting list */
-		proc = os_waiting_list_pop(&sem->next);
+		proc = os_queue_process_pop(&sem->queue)->proc;
 		/* Enable this process */
 		__os_process_enable(proc);
 	}

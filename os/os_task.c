@@ -17,20 +17,20 @@
 #if CONFIG_OS_USE_TICK_COUNTER == true
 void os_task_delay(os_tick_t tick_nb)
 {
-	extern volatile os_tick_t tick_counter;
+	extern volatile os_tick_t os_tick_counter;
+	os_tick_t start_tick, last_tick;
 
 	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_DELAY_START, tick_nb);
 
-	os_tick_t start_tick, last_tick;
-	start_tick = tick_counter;
-	last_tick = tick_counter + tick_nb;
+	start_tick = os_tick_counter;
+	last_tick = os_tick_counter + tick_nb;
 	// Check if the counter has been wrapped
 	if (last_tick < start_tick) {
-		while (tick_counter > start_tick) {
+		while (os_tick_counter > start_tick) {
 			os_yield();
 		}
 	}
-	while (tick_counter < last_tick) {
+	while (os_tick_counter < last_tick) {
 		os_yield();
 	}
 

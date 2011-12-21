@@ -15,18 +15,26 @@
 #ifndef __OS_SEMAPHORE_H__
 #define __OS_SEMAPHORE_H__
 
+#define CONFIG_OS_SEMAPHORE_USE_8BIT_COUNTER true
+
+#if CONFIG_OS_SEMAPHORE_USE_8BIT_COUNTER == true
+typedef uint8_t os_semaphore_counter_t;
+#else
+typedef uint16_t os_semaphore_counter_t;
+#endif
+
 /*! \brief Semaphore Structure
  */
 struct os_semaphore {
 	/*! \brief Counter to hold the current number of free semaphores
 	 */
-	uint16_t counter;
+	os_semaphore_counter_t counter;
 	/*! \brief Maximum semaphore available
 	 */
-	uint16_t max;
+	os_semaphore_counter_t max;
 	/*! \brief Next processes on the waiting list
 	 */
-	struct os_process *next;
+	struct os_queue_process *queue;
 };
 
 /*! \name Semaphores
@@ -43,11 +51,12 @@ struct os_semaphore {
  * \param initial_count The count value assigned to the semaphore when it is
  * created
  */
-static inline void os_semaphore_create(struct os_semaphore *sem, uint16_t counter,
-		uint16_t initial_count) {
+static inline void os_semaphore_create(struct os_semaphore *sem,
+		os_semaphore_counter_t counter,
+		os_semaphore_counter_t initial_count) {
 	sem->counter = initial_count;
 	sem->max = counter;
-	sem->next = NULL;
+	sem->queue = NULL;
 }
 
 /*! \brief Creates a binary semaphore
@@ -69,6 +78,16 @@ static inline void os_semaphore_create_event(struct os_event *event,
 		struct os_semaphore *sem) {
 	extern const struct os_event_descriptor semaphore_event_descriptor;
 	os_event_create(event, &semaphore_event_descriptor, (os_ptr_t) sem);
+}
+
+/*! \brief Get a semaphore out of a \ref os_event structure.
+ * \ingroup group_os_public_api
+ * \param The sempahore event
+ * \return The \ref os_semaphore structure
+ * \pre The event must have been generate from \ref os_semaphore_create_event
+ */
+static inline struct os_semaphore *os_event_get_semaphore(struct os_event *event) {
+	return (struct os_semaphore *) event->args;
 }
 
 /*! \brief Take a semaphore. If no semaphore is available, wait until it gets

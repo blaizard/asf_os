@@ -15,41 +15,39 @@
 #ifndef __OS_STATISTICS_H__
 #define __OS_STATISTICS_H__
 
-#if CONFIG_OS_USE_STATISTICS == true
-	#if CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH == true
-		void __os_statistics_switch_context_tick_handler_start(os_cy_t offset_cy);
-		void __os_statistics_switch_context_tick_handler_stop(os_cy_t offset_cy);
-		void __os_statistics_switch_context_start(os_cy_t offset_cy);
-		void __os_statistics_switch_context_stop(os_cy_t offset_cy);
-		/*! \brief Hook use to get a time information at the entrance of
-		 * a context task switch.
-		 * \param offset_cy The number of cycles before the call of
-		 * \ref HOOK_OS_STATISTICS_SWITCH_CONTEXT_START and after the
-		 * call of \ref HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP within
-		 * the context task switch operation.
-		 */
-		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_START(offset_cy) \
-			do { \
-				__os_statistics_switch_context_tick_handler_start(offset_cy); \
-			} while (false)
-		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_STOP(offset_cy) \
-			do { \
-				__os_statistics_switch_context_tick_handler_stop(offset_cy); \
-			} while (false)
-		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_START(offset_cy) \
-			do { \
-				__os_statistics_switch_context_start(offset_cy); \
-			} while (false)
-		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP(offset_cy) \
-			do { \
-				__os_statistics_switch_context_stop(offset_cy); \
-			} while (false)
-	#else
-		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_START(offset_cy)
-		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_STOP(offset_cy)
-		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_START(offset_cy)
-		#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP(offset_cy)
-	#endif
+#if CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH == true
+	void __os_statistics_switch_context_tick_handler_start(os_cy_t offset_cy);
+	void __os_statistics_switch_context_tick_handler_stop(os_cy_t offset_cy);
+	void __os_statistics_switch_context_start(os_cy_t offset_cy);
+	void __os_statistics_switch_context_stop(os_cy_t offset_cy);
+	/*! \brief Hook use to get a time information at the entrance of
+	 * a context task switch.
+	 * \param offset_cy The number of cycles before the call of
+	 * \ref HOOK_OS_STATISTICS_SWITCH_CONTEXT_START and after the
+	 * call of \ref HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP within
+	 * the context task switch operation.
+	 */
+	#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_START(offset_cy) \
+		do { \
+			__os_statistics_switch_context_tick_handler_start(offset_cy); \
+		} while (false)
+	#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_STOP(offset_cy) \
+		do { \
+			__os_statistics_switch_context_tick_handler_stop(offset_cy); \
+		} while (false)
+	#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_START(offset_cy) \
+		do { \
+			__os_statistics_switch_context_start(offset_cy); \
+		} while (false)
+	#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP(offset_cy) \
+		do { \
+			__os_statistics_switch_context_stop(offset_cy); \
+		} while (false)
+#else
+	#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_START(offset_cy)
+	#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_STOP(offset_cy)
+	#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_START(offset_cy)
+	#define HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP(offset_cy)
 #endif
 
 /*! \name Statistics

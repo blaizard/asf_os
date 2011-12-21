@@ -56,23 +56,24 @@ enum os_event_status {
 struct os_event_descriptor {
 	/*! \brief Sorting function. This function compare 2 processes.
 	 * The following helper functions are available:
-	 * - \ref os_event_sort_fifo
-	 * - \ref os_event_sort_lifo
+	 * - \ref os_queue_sort_fifo
+	 * - \ref os_queue_sort_lifo
 	 * \note This function is optional. By default the new process will added
-	 * using the \ref os_event_sort_fifo algorithm or the
-	 * \ref os_event_sort_priority alorithm, depending if priorities are
-	 * enabled or not.
-	 * \param proc1 The first process used in the comparison
-	 * \param proc2 The second process used in the comparison
+	 * using the \ref os_queue_sort_fifo algorithm or the
+	 * \ref os_queue_process_sort_priority alorithm, depending if priorities
+	 * are enabled or not.
+	 * \param a The first process used in the comparison
+	 * \param b The second process used in the comparison
 	 * \return true if proc1 should be placed before proc2, false otherwise.
 	 */
-	bool (*sort)(struct os_process *proc1, struct os_process *proc2);
+	bool (*sort)(struct os_queue *a, struct os_queue *b);
 	/*! \brief This function will handle the setup of the event. For
 	 * example, if the event is a timer, the timer will start to run after
 	 * the call of this function.
+	 * \param proc The process associated with this event
 	 * \param args Argument passed to the event during its creation
 	 */
-	void (*start)(os_ptr_t args);
+	void (*start)(struct os_process *proc, os_ptr_t args);
 	/*! \brief Check the status of an event
 	 * \note This function is optional.
 	 * \param proc The process of the process which is intented to triggered
@@ -100,6 +101,8 @@ struct os_event_descriptor {
  * When an event has no process, it is removed from the active event list.
  */
 
+OS_QUEUE_DEFINE(event, struct os_process *proc; struct os_event **event_triggered;)
+
 /*! \brief Event structure
  */
 struct os_event {
@@ -110,7 +113,7 @@ struct os_event {
 	/*! \brief This is the starting point of the process chain list associated
 	 * with this event. The last process is followed by a NULL pointer.
 	 */
-	struct os_process *proc;
+	struct os_queue_event *queue;
 	/*! \brief Next event in the chain list. Last event is followed by a
 	 * NULL pointer.
 	 */
@@ -119,43 +122,6 @@ struct os_event {
 	 */
 	os_ptr_t args;
 };
-
-/*! \name Process waiting list helper function set
- *
- * \{
- */
-/*! \brief
- */
-static inline struct os_process *os_waiting_list_pop(
-		struct os_process **first_proc) {
-	struct os_process *proc = *first_proc;
-	*first_proc = proc->event_next;
-	return proc;
-}
-
-static inline void os_waiting_list_insert_after(
-		struct os_process *proc,
-		struct os_process *new_proc) {
-	new_proc->event_next = proc->event_next;
-	proc->event_next = new_proc;
-}
-
-static inline void os_waiting_list_insert_first(
-		struct os_process **first_proc,
-		struct os_process *proc) {
-	proc->event_next = *first_proc;
-	*first_proc = proc;
-}
-
-void os_waiting_list_add(struct os_process **first_proc,
-		struct os_process *proc);
-
-void os_waiting_list_add_sort(struct os_process **first_proc,
-		struct os_process *proc,
-		bool (*sort_fct)(struct os_process *, struct os_process *));
-/*!
- * \}
- */
 
 /*! \name Events
  *
@@ -182,26 +148,6 @@ void os_event_create_from_function(struct os_event *event,
  * \name Event Helper Functions
  * \{
  */
-/*! \brief Helper function used to define the order of a new process added to an
- * event. This function will add them so that the \b first \b in will be the
- * \b first \b out. This function must be used with
- * \ref os_event_descriptor::sort.
- */
-bool os_event_sort_fifo(struct os_process *proc1, struct os_process *proc2);
-/*! \brief Helper function used to define the order of a new process added to an
- * event. This function will add them so that the \b last \b in will be the
- * \b first \b out. This function must be used with
- * \ref os_event_descriptor::sort.
- */
-bool os_event_sort_lifo(struct os_process *proc1, struct os_process *proc2);
-
-/*! \brief Helper function used to define the order of a new process added to an
- * event. This function will add them so that the highest priority process will be
- * at the head of the list. This function must be used with
- * \ref os_event_descriptor::sort.
- * \pre \ref CONFIG_OS_USE_PRIORITY must be set
- */
-bool os_event_sort_priority(struct os_process *proc1, struct os_process *proc2);
 /*!
  * \}
  */
@@ -224,11 +170,23 @@ void os_event_scheduler(void);
 void os_event_create(struct os_event *event,
 		const struct os_event_descriptor *descriptor, os_ptr_t args);
 
+static inline bool os_event_is_enabled(struct os_event *event) {
+	return (bool) (event->queue);
+}
+
+struct os_event *os_process_sleep(struct os_process *proc,
+		struct os_queue_event *queue_elt, int nb_events, ...);
+
 /*! \brief Associate a process with an event and enable the event
  * \ingroup group_os_internal_api
  * \param event The event to receive the process
+ * \param queue_elt A unitialized queue structure used to hold the process
+ * in the queue.
  * \param proc The process to add
+ * \param event_triggered A pointer to update which will reflect the event that
+ * has been triggered
  */
-void __os_event_register(struct os_event *event, struct os_process *proc);
+void __os_event_register(struct os_event *event, struct os_queue_event *queue_elt,
+		struct os_process *proc, struct os_event **event_triggered);
 
 #endif // __OS_EVENT_H__

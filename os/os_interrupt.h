@@ -110,7 +110,8 @@ static inline void os_interrupt_trigger(struct os_interrupt *interrupt) {
  * \param priority The new priority
  * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
  */
-static inline void os_interrupt_set_priority(struct os_interrupt *interrupt, enum os_priority priority) {
+static inline void os_interrupt_set_priority(struct os_interrupt *interrupt,
+		enum os_priority priority) {
 	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_SET_PRIORITY, priority);
 	os_process_set_priority(os_interrupt_get_process(interrupt), priority);
 }
@@ -124,7 +125,7 @@ static inline enum os_priority os_interrupt_get_priority(struct os_interrupt *in
 	enum os_priority priority;
 	priority = os_process_get_priority(os_interrupt_get_process(interrupt));
 	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_GET_PRIORITY, priority);
-	return priority;
+	return (enum os_priority) priority;
 }
 #endif
 

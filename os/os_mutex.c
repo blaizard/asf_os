@@ -67,11 +67,14 @@ void os_mutex_lock(struct os_mutex *mutex)
 	}
 	/* If the mutex is already locked, suspend this task */
 	else {
+		/* Create a queue element, it will be stored on the stack. */
+		struct os_queue_process queue_elt;
 		/* Disable this process */
 		__os_process_disable(os_process_get_current());
+		/* Set the data associated to this queue entry */
+		queue_elt.proc = os_process_get_current();
 		/* Add this process to the event list of the mutex */
-		os_waiting_list_add(&mutex->next,
-				os_process_get_current());
+		os_queue_process_add(&mutex->queue, &queue_elt);
 		/* Manually switch the process context */
 		os_switch_context(false);
 	}
@@ -92,10 +95,10 @@ void os_mutex_unlock(struct os_mutex *mutex)
 			os_enter_critical();
 		}
 		/* Check if there is another process in the waiting list */
-		if (mutex->next) {
+		if (mutex->queue) {
 			struct os_process *proc;
 			/* Pop the next process in the waiting list */
-			proc = os_waiting_list_pop(&mutex->next);
+			proc = os_queue_process_pop(&mutex->queue)->proc;
 			/* Lock the mutex for this process */
 			mutex->process = proc;
 			/* Enable this process */

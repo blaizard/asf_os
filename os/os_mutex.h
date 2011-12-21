@@ -26,7 +26,7 @@ struct os_mutex {
 	struct os_process *process;
 	/*! \brief Next processes on the waiting list
 	 */
-	struct os_process *next;
+	struct os_queue_process *queue;
 };
 
 /*! \name Mutex
@@ -42,7 +42,7 @@ struct os_mutex {
  */
 static inline void os_mutex_create(struct os_mutex *mutex) {
 	mutex->is_locked = false;
-	mutex->next = NULL;
+	mutex->queue = NULL;
 }
 
 /*! \brief Creates an event from a mutex. The mutex must have been
@@ -56,6 +56,16 @@ static inline void os_mutex_create_event(struct os_event *event,
 		struct os_mutex *mutex) {
 	extern const struct os_event_descriptor mutex_event_descriptor;
 	os_event_create(event, &mutex_event_descriptor, (os_ptr_t) mutex);
+}
+
+/*! \brief Get a mutex out of a \ref os_event structure.
+ * \ingroup group_os_public_api
+ * \param The mutex event
+ * \return The \ref os_mutex structure
+ * \pre The event must have been generate from \ref os_mutex_create_event
+ */
+static inline struct os_mutex *os_event_get_mutex(struct os_event *event) {
+	return (struct os_mutex *) event->args;
 }
 
 /*! \brief Lock a mutex. If the mutex is already locked, wait until it gets

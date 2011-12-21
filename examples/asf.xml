@@ -50,4 +50,18 @@
 		<!-- Common dependencies //-->
                 <require idref="common.applications.os.examples.common"/>
 	</module>
+
+	<module type="application" id="common.applications.os.examples.event" caption="Events example">
+		<!-- Meta information //-->
+		<info type="description" value="summary">
+		Events example
+		</info>
+                <device-support value="avr"/>
+                <!-- Example specific //-->
+		<build type="include-path" value="./conf_event"/>
+		<build type="header-file" value="conf_event/conf_os.h"/>
+		<build type="c-source" value="event.c"/>
+		<!-- Common dependencies //-->
+                <require idref="common.applications.os.examples.common"/>
+	</module>
 </asf>

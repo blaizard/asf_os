@@ -206,6 +206,22 @@
 	#define CONFIG_OS_USE_STATISTICS false
 #endif
 
+/*! \def CONFIG_OS_PROCESS_ENABLE_FIFO
+ * \brief Setting this define to true will bring enabled process at the end of
+ * the active process list. The last process enabled will be the last called by
+ * the scheduler.
+ * For example, if you enable process_3 to the active process list.\n
+ * if \ref CONFIG_OS_PROCESS_ENABLE_FIFO == true
+ * \code process_1 -> process_2 -> process_3 -> process_1 -> ... \endcode
+ * if \ref CONFIG_OS_PROCESS_ENABLE_FIFO == false
+ * \code process_3 -> process_1 -> process_2 -> process_3 -> ... \endcode
+ * \note Activating this define impacts a bit the CPU and memory ressources when
+ * enabling a new process.
+ */
+#ifndef CONFIG_OS_PROCESS_ENABLE_FIFO
+	#define CONFIG_OS_PROCESS_ENABLE_FIFO false
+#endif
+
 /*! \pre \ref CONFIG_OS_USE_STATISTICS must be set
  * \{
  */
@@ -217,7 +233,7 @@
  * - \ref os_statistics_get_task_switch_time_jitter
  */
 #ifndef CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH
-	#define CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH false //true
+	#define CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH false
 #endif
 
 /*!
@@ -278,9 +294,12 @@
 		((os_ptr_t) ((((os_intptr_t) (ptr))) & \
 		~(OS_COMPILER_ALIGN - 1)))
 
+#define OS_NB_ARGS(...) \
+		(sizeof((os_ptr_t []) {__VA_ARGS__}) / sizeof(os_ptr_t))
+
 #if CONFIG_OS_USE_PRIORITY == true
-/*! \brief Priority of the task.
- * The lower get the most priority
+/*! \brief Priority values for a process.
+ * The lower get the most priority.
  */
 enum os_priority {
 	OS_PRIORITY_1 = 0,
@@ -318,6 +337,14 @@ enum os_process_type {
 	OS_PROCESS_TYPE_EVENT = 3,
 };
 
+/*! \brief Status of the process
+ */
+enum os_process_status {
+	OS_PROCESS_IDLE = 0,
+	OS_PROCESS_ACTIVE = 1,
+	OS_PROCESS_PENDING = 2,
+};
+
 /*! This structure represents a process context
  */
 struct os_process {
@@ -329,21 +356,23 @@ struct os_process {
 	 * Active processes are registered within a chain list.
 	 */
 	struct os_process *next;
-	/*! \brief Pointer of the next process in the event list.
-	 * This pointer is used for any kind of event and not necessarily with
-	 * the event module.
+	/*! \brief Indicates if the process is active or not.
+	 * Values are part of \ref os_process_status
 	 */
-	struct os_process *event_next;
+	uint8_t status;
 	/*! \brief The type of the process
+	 * Values are part of \ref os_process_type
 	 */
-	enum os_process_type type;
+	uint8_t type;
 #if CONFIG_OS_USE_PRIORITY == true
 	/*! \brief Priority of the process.
+	 * Values are part of \ref os_priority
 	 */
-	enum os_priority priority;
+	uint8_t priority;
 	/*! \brief Use to manage the process priorities
+	 * Values are part of \ref os_priority
 	 */
-	enum os_priority priority_counter;
+	uint8_t priority_counter;
 #endif
 #if CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH == true
 	/*! \brief Internal cycle counter increased during the activity of the
@@ -432,6 +461,7 @@ static inline void os_free(os_ptr_t ptr) {
 #endif
 
 /* Include OS modules */
+#include "os_queue.h"
 #include "os_event.h"
 
 /*! \name Kernel Control
@@ -542,12 +572,23 @@ void os_process_enable(struct os_process *proc);
  */
 void os_process_disable(struct os_process *proc);
 
+/*! \brief Check wether a process is active or not
+ * \ingroup group_os_public_api
+ * \param proc The process to be checked
+ * \return true if enabled, false otherwise
+ */
+static inline bool os_process_is_enabled(struct os_process *proc) {
+	return (proc->status == OS_PROCESS_ACTIVE);
+}
+
 /*! \brief Check wether a process is enabled or not
  * \ingroup group_os_public_api
  * \param proc The process to be checked
  * \return true if enabled, false otherwise
  */
-bool os_process_is_enabled(struct os_process *proc);
+static inline bool os_process_is_pending(struct os_process *proc) {
+	return (proc->status == OS_PROCESS_PENDING);
+}
 
 #if CONFIG_OS_USE_PRIORITY == true
 /*! \brief Change the priority of a process
@@ -556,7 +597,8 @@ bool os_process_is_enabled(struct os_process *proc);
  * \param priority The new priority
  * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
  */
-static inline void os_process_set_priority(struct os_process *proc, enum os_priority priority) {
+static inline void os_process_set_priority(struct os_process *proc,
+		enum os_priority priority) {
 	// Not critical so no need to use the os_enter_critical function
 	proc->priority = priority;
 	proc->priority_counter = priority;
@@ -568,7 +610,7 @@ static inline void os_process_set_priority(struct os_process *proc, enum os_prio
  * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
  */
 static inline enum os_priority os_process_get_priority(struct os_process *proc) {
-	return proc->priority_counter;
+	return (enum os_priority) proc->priority_counter;
 }
 #endif
 
@@ -651,9 +693,9 @@ bool os_process_context_load(struct os_process *proc, os_proc_ptr_t proc_ptr,
  */
 static inline struct os_process *os_switch_context_int_handler_hook(void) {
 #if CONFIG_OS_USE_TICK_COUNTER == true
-	extern volatile os_tick_t tick_counter;
+	extern volatile os_tick_t os_tick_counter;
 	// Update the tick counter
-	tick_counter++;
+	os_tick_counter++;
 #endif
 #if CONFIG_OS_DEBUG == true
 	HOOK_OS_DEBUG_TICK();
@@ -702,6 +744,7 @@ static inline void __os_process_create(struct os_process *proc, os_ptr_t sp,
 	/* Align the stack pointer within the stack. */
 	proc->sp = OS_ALIGN_BACK(sp);
 	proc->type = type;
+	proc->status = OS_PROCESS_IDLE;
 #if CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH == true
 	proc->cycle_counter = 0;
 #endif

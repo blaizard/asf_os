@@ -88,7 +88,8 @@ static inline struct os_process *os_task_get_process(struct os_task *task) {
  * \param task The task
  * \param priority The priority to set
  */
-static inline void os_task_set_priority(struct os_task *task, enum os_priority priority) {
+static inline void os_task_set_priority(struct os_task *task,
+		enum os_priority priority) {
 	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_SET_PRIORITY, priority);
 	os_process_set_priority(os_task_get_process(task), priority);
 }
@@ -101,7 +102,7 @@ static inline enum os_priority os_task_get_priority(struct os_task *task) {
 	enum os_priority priority;
 	priority = os_process_get_priority(os_task_get_process(task));
 	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_GET_PRIORITY, priority);
-	return priority;
+	return (enum os_priority) priority;
 }
 #endif
 
@@ -154,11 +155,30 @@ struct os_task *os_task_get_current(void);
 #if CONFIG_OS_USE_EVENTS == true
 /*! \brief Send the task to sleep and wake it up uppon a specific event
  * \ingroup group_os_public_api
- * \param task The task to send to sleep
- * \param event The event used to wakeup the task
+ * \param ... List of events (\ref os_event) used to wakeup the task
  * \pre \ref CONFIG_OS_USE_EVENTS needs to be set
  */
-void os_task_sleep(struct os_task *task, struct os_event *event);
+#define os_task_sleep(...) \
+		do { \
+			struct os_queue_event __queue_elt[OS_NB_ARGS(__VA_ARGS__)]; \
+			os_process_sleep(os_process_get_current(), \
+				__queue_elt, OS_NB_ARGS(__VA_ARGS__), \
+				__VA_ARGS__); \
+		} while (false);
+/*! \brief Send the task to sleep and wake it up uppon a specific event
+ * \ingroup group_os_public_api
+ * \param event_triggered An empty \ref os_event pointer which will point on
+ * the event which triggered the wake up of the process.
+ * \param ... List of events (\ref os_event) used to wakeup the task
+ * \pre \ref CONFIG_OS_USE_EVENTS needs to be set
+ */
+#define os_task_sleep_ex(event_triggered, ...) \
+		do { \
+			struct os_queue_event __queue_elt[OS_NB_ARGS(__VA_ARGS__)]; \
+			event_triggered = os_process_sleep(os_process_get_current(), \
+				__queue_elt, OS_NB_ARGS(__VA_ARGS__), \
+				__VA_ARGS__); \
+		} while (false);
 #endif
 
 /*!

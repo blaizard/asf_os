@@ -21,6 +21,15 @@
  * - Catch stack overflow exceptions.
  */
 
+/*! \def OS_DEBUG_USE_TRACE
+ * \ingroup group_os_config
+ * \brief Activates the trace functionnality
+ * \pre Used when \ref CONFIG_OS_DEBUG is set to true
+ */
+#ifndef OS_DEBUG_USE_TRACE
+	#define OS_DEBUG_USE_TRACE false
+#endif
+
 /*! \def CONFIG_OS_DEBUG_UINT8_PATTERN
  * \ingroup group_os_config
  * \brief Defines the default character used to initialy fill the stack
@@ -61,7 +70,6 @@ enum os_debug_trace_event {
 	
 };
 
-#define OS_DEBUG_USE_TRACE true
 #if OS_DEBUG_USE_TRACE == true
 	#define OS_DEBUG_TRACE_LOG(event, data) \
 		do { \

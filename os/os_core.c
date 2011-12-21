@@ -30,6 +30,7 @@
  */
 struct os_process os_app = {
 	.next = &os_app,
+	.status = OS_PROCESS_ACTIVE,
 	.type = OS_PROCESS_TYPE_APPLICATION,
 #if CONFIG_OS_USE_PRIORITY == true
 	.priority = OS_PRIORITY_1,
@@ -47,7 +48,7 @@ struct os_process *__os_current_process = &os_app;
 #if CONFIG_OS_USE_TICK_COUNTER == true
 /*! \brief Tick counter
  */
-volatile os_tick_t tick_counter = 0;
+volatile os_tick_t os_tick_counter = 0;
 #endif
 
 #if CONFIG_OS_USE_PRIORITY == true
@@ -84,18 +85,22 @@ void __os_process_enable(struct os_process *proc)
 
 	// Look for the last process registered
 	last_proc = __os_current_process->next;
+#if CONFIG_OS_PROCESS_ENABLE_FIFO == true
 	while (last_proc->next != __os_current_process->next) {
 		last_proc = last_proc->next;
 	}
+#endif
 	// Add the process to the chain list.
 	// If the application process is running, remove it from the active process
 	// list
 	if (os_process_is_application(last_proc)) {
 		proc->next = proc;
+		os_app.status = OS_PROCESS_IDLE;
 	}
 	else {
 		proc->next = last_proc->next;
 	}
+	proc->status = OS_PROCESS_ACTIVE;
 	last_proc->next = proc;
 }
 
@@ -115,21 +120,6 @@ void os_process_enable(struct os_process *proc)
 	}
 }
 
-bool os_process_is_enabled(struct os_process *proc)
-{
-	// Starts from the "next" element.
-	// There is maximum 1 element on the path before reaching the circular
-	// chain buffer.
-	struct os_process *last_proc = __os_current_process->next;
-	do {
-		if (last_proc == proc) {
-			return true;
-		}
-		last_proc = last_proc->next;
-	} while (last_proc != __os_current_process->next);
-	return false;
-}
-
 void __os_process_disable(struct os_process *proc)
 {
 	struct os_process *last_proc = proc;
@@ -143,12 +133,14 @@ void __os_process_disable(struct os_process *proc)
 		// If this was the last process in the chain list, then remove
 		// it and add the application process instead
 		os_app.next = &os_app;
+		os_app.status = OS_PROCESS_ACTIVE;
 		proc->next = &os_app;
 		os_app.type = OS_PROCESS_TYPE_APPLICATION;
 	}
 	else {
 		last_proc->next = proc->next;
 	}
+	proc->status = OS_PROCESS_IDLE;
 }
 
 void os_process_disable(struct os_process *proc)

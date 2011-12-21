@@ -26,6 +26,8 @@ void os_event_create(struct os_event *event,
 	event->desc.start = descriptor->start;
 	event->desc.is_triggered = descriptor->is_triggered;
 	event->args = args;
+	/* Mark this event as disabled */
+	event->queue = NULL;
 }
 
 /*! Private helper functions
@@ -49,45 +51,9 @@ static inline void os_event_pop(struct os_event *event) {
 	}
 }
 
-void os_waiting_list_add(struct os_process **first_proc,
-		struct os_process *proc)
-{
-	bool (*sort_fct)(struct os_process *, struct os_process *);
-
-	// Get the appropriate sorting function
-#if CONFIG_OS_USE_PRIORITY == true
-	sort_fct = os_event_sort_priority;
-#else
-	sort_fct = os_event_sort_fifo;
-#endif
-
-	os_waiting_list_add_sort(first_proc, proc, sort_fct);
-}
-
-void os_waiting_list_add_sort(struct os_process **first_proc,
-		struct os_process *proc,
-		bool (*sort_fct)(struct os_process *, struct os_process *))
-{
-	struct os_process *current_proc;
-	struct os_process *prev_proc = NULL;
-	/* Add the process to the list */
-	current_proc = *first_proc;
-	while (current_proc && sort_fct(current_proc, proc)) {
-		prev_proc = current_proc;
-		current_proc = current_proc->event_next;
-	}
-	// If the process is supposed to be at the beginning of the list
-	if (prev_proc) {
-		os_waiting_list_insert_after(prev_proc, proc);
-	}
-	else {
-		os_waiting_list_insert_first(first_proc, proc);
-	}
-}
-
 static inline void __os_event_enable(struct os_event *event) {
 	if (os_current_event) {
-		event->next = os_current_event->next;
+		event->next = os_current_event;
 	}
 	else {
 		event->next = NULL;
@@ -95,68 +61,16 @@ static inline void __os_event_enable(struct os_event *event) {
 	os_current_event = event;
 }
 
-static inline void __os_event_start(struct os_event *event) {
+static inline void __os_event_start(struct os_event *event,
+		struct os_process *proc) {
 	if (event->desc.start) {
-		event->desc.start(event->args);
+		event->desc.start(proc, event->args);
 	}
 }
 
 /*!
  * \}
  */
-
-bool os_event_sort_fifo(struct os_process *proc1,
-		struct os_process *proc2)
-{
-	return true;
-}
-
-bool os_event_sort_lifo(struct os_process *proc1,
-		struct os_process *proc2)
-{
-	return false;
-}
-
-#if CONFIG_OS_USE_PRIORITY == true
-bool os_event_sort_priority(struct os_process *proc1,
-		struct os_process *proc2)
-{
-	return (proc1->priority <= proc2->priority);
-}
-#endif
-
-void __os_event_register(struct os_event *event, struct os_process *proc)
-{
-	struct os_event *current_event;
-	bool (*sort_fct)(struct os_process *, struct os_process *);
-
-	// Get the appropriate sorting function
-#if CONFIG_OS_USE_PRIORITY == true
-	sort_fct = os_event_sort_priority;
-#else
-	sort_fct = os_event_sort_fifo;
-#endif
-	if (event->desc.sort) {
-		sort_fct = event->desc.sort;
-	}
-
-	// Enable the event process if not done already, before messing up
-	// with the process context
-	__os_process_event_enable();
-
-	// Add the process to the event sorted process list
-	os_waiting_list_add_sort(&event->proc, proc, sort_fct);
-
-	// Add this event to the event list if not done already
-	current_event = os_current_event;
-	while (current_event != event) {
-		if (current_event == NULL) {
-			__os_event_enable(event);
-			break;
-		}
-		current_event = current_event->next;
-	}
-}
 
 /*!
  * Event scheduler
@@ -165,8 +79,7 @@ void os_event_scheduler(void)
 {
 	// Current event to process
 	struct os_event *event = os_current_event;
-	struct os_process *proc;
-	enum os_event_status status;
+	enum os_event_status status = OS_EVENT_NONE;
 
 	// If no events, disable the event process
 	if (!event) {
@@ -177,25 +90,59 @@ void os_event_scheduler(void)
 	os_enter_critical();
 	while (event) {
 		do {
-			// Check if the event has been triggered
-			status = event->desc.is_triggered(event->proc,
-					event->args);
-			if (status != OS_EVENT_NONE) {
-				// Remove the process from the event list
-				proc = os_waiting_list_pop(&event->proc);
-				// If this is the last process, remove the event
-				// from the list
-				if (!proc->event_next) {
-					status = OS_EVENT_OK_STOP;
-					os_event_pop(event);
+			/* If the queue is not empty */
+			if (event->queue) {
+				struct os_queue_event *queue_elt;
+				/* Get the head element of the queue */
+				queue_elt = os_queue_event_head(event->queue);
+				/* Make sure the process is in pending state */
+				if (os_process_is_pending(queue_elt->proc)) {
+					// Check if the event has been triggered
+					status = event->desc.is_triggered(queue_elt->proc, event->args);
+					if (status != OS_EVENT_NONE) {
+						/* Update the event feedback variable */
+						*queue_elt->event_triggered = event;
+						// Remove the process from the event list;
+						os_queue_event_pop(&event->queue);
+						// Activate the process
+						__os_process_enable(queue_elt->proc);
+					}
 				}
-				// Activate the process
-				__os_process_enable(proc);
+				/* If the process is pending, pop this process out
+				 * of the event list.
+				 */
+				else {
+					/* Remove the not pending process from
+					 * the list.
+					 */
+					os_queue_event_pop(&event->queue);
+					/* Continue processing the next process
+					 * in the list.
+					 */
+					status = OS_EVENT_OK_CONTINUE;
+				}
+			}
+			/* The process queue of the current even is empty,
+			 * remove this event from the active event list.
+			 */
+			if (!event->queue) {
+				status = OS_EVENT_NONE;
+				os_event_pop(event);
 			}
 		} while (status == OS_EVENT_OK_CONTINUE);
 		// Next event
 		event = event->next;
 	}
+	/* Garbage collector.
+	 * Remove processes that are not pending anymore.
+	 */
+	/*if (garbage_collector) {
+		event = os_current_event;
+		while (event) {
+			proc = os_queue_head(event->queue);
+		}
+	}*/
+	
 	os_leave_critical();
 
 	// Call the scheduler
@@ -207,9 +154,9 @@ struct __os_event_custom_function_args {
 	os_ptr_t args;
 };
 
-enum os_event_status __os_event_custom_function_handler(struct os_process *proc,
+static enum os_event_status __os_event_custom_function_handler(struct os_process *proc,
 		os_ptr_t args);
-enum os_event_status __os_event_custom_function_handler(struct os_process *proc,
+static enum os_event_status __os_event_custom_function_handler(struct os_process *proc,
 		os_ptr_t args)
 {
 	struct __os_event_custom_function_args *custom_args =
@@ -232,10 +179,38 @@ void os_event_create_from_function(struct os_event *event,
 	os_event_create(event, &descriptor, (os_ptr_t) &custom_args);
 }
 
-/*!
- * Task API Extension
- * \{
- */
+void __os_event_register(struct os_event *event, struct os_queue_event *queue_elt,
+		struct os_process *proc, struct os_event **event_triggered)
+{
+	bool (*sort_fct)(struct os_queue *, struct os_queue *);
+
+	// Get the appropriate sorting function
+#if CONFIG_OS_USE_PRIORITY == true
+	sort_fct = os_queue_process_sort_priority;
+#else
+	sort_fct = os_queue_sort_fifo;
+#endif
+	if (event->desc.sort) {
+		sort_fct = event->desc.sort;
+	}
+
+	// Enable the event process if not done already, before messing up
+	// with the process context
+	__os_process_event_enable();
+
+	// Add this event to the event list if not done already
+	if (!os_event_is_enabled(event)) {
+		__os_event_enable(event);
+	}
+
+	/* Assign the process to the queue element */
+	queue_elt->proc = proc;
+	/* Assign the variable to update when the event has been triggered */
+	queue_elt->event_triggered = event_triggered;
+
+	// Add the process to the event sorted process list
+	os_queue_event_add_sort(&event->queue, queue_elt, sort_fct);
+}
 
 #if CONFIG_OS_USE_SW_INTERRUPTS == true
 void os_interrupt_trigger_on_event(struct os_interrupt *interrupt,
@@ -247,41 +222,84 @@ void os_interrupt_trigger_on_event(struct os_interrupt *interrupt,
 	if (!is_critical) {
 		os_enter_critical();
 	}
-	__os_event_start(event);
-	__os_event_register(event, os_interrupt_get_process(interrupt));
+	//__os_event_start(event);
+	//__os_event_register(event, os_interrupt_get_process(interrupt));
 	if (!is_critical) {
 		os_leave_critical();
 	}
 }
 #endif
 
-void os_task_sleep(struct os_task *task, struct os_event *event)
+#include <stdarg.h>
+
+struct os_event *os_process_sleep(struct os_process *proc,
+		struct os_queue_event *queue_elt, int nb_events, ...)
 {
+	int i;
+	va_list ap, aq;
+	struct os_event *event, *event_triggered = NULL;
 	/* Save the critical region status */
 	bool is_critical = os_is_critical();
-
-	/* Start the event */
-	__os_event_start(event);
 
 	/* Enter in a critical region if not already in */
 	if (!is_critical) {
 		os_enter_critical();
 	}
-	/* Send the task to sleep if not done already */
-	if (os_task_is_enabled(task)) {
-		__os_process_disable(os_task_get_process(task));
+
+	/* Disable the process (send it to sleep) */
+	if (os_process_is_enabled(proc)) {
+		__os_process_disable(proc);
 	}
-	/* Associate the task with its event and start it */
-	__os_event_register(event, os_task_get_process(task));
-	/* Call the scheduler */
-	os_switch_context(false);
+
+	/* Set the process status to pending */
+	proc->status = OS_PROCESS_PENDING;
+
+	/* No event has been triggered so far so update the feedback variable
+	 * to NULL.
+	 */
+	event_triggered = NULL;
+
+	va_start(ap, nb_events);
+	va_copy(aq, ap);
+	i = nb_events;
+	while (i--) {
+		/* Get the next event from the list */
+		event = va_arg(ap, struct os_event *);
+		/* Start the event */
+		__os_event_start(event, proc);
+		/* Register the process in the active event list */
+		__os_event_register(event, &queue_elt[i], proc, &event_triggered);
+	}
+	va_end(ap);
+
+	/* If the process to be send to sleep is thye current process, stop it
+	 * and use a garbage collector wipe out the extra events registered.
+	 */
+	if (proc == os_process_get_current()) {
+
+		/* Call the scheduler */
+		os_switch_context(false);
+
+		/* Garbage collector, remove the entries from the queue which
+		 * correspond to this process.
+		 */
+		i = nb_events;
+		while (i--) {
+			/* Get the next event from the list */
+			event = va_arg(aq, struct os_event *);
+			/* Remove the process from the queue */
+			os_queue_event_remove(&event->queue, &queue_elt[i]);
+		}
+		va_end(aq);
+	}
+
 	/* Leave the critical region */
 	if (!is_critical) {
 		os_leave_critical();
 	}
+
+	/* Returns a pointer on the event which has woken up the process */
+	return event_triggered;
 }
-/*!
- * \}
- */
 
 #endif // CONFIG_OS_USE_EVENTS == true
