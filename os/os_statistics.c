@@ -46,7 +46,7 @@ static inline void measure_context_task_switch_time_stop(os_cy_t current_cy) {
 }
 
 static inline void update_task_cycle_counter_start(os_cy_t current_cy) {
-	struct os_process *current_process = os_process_get_current();
+	struct os_process *current_process = __os_process_get_current();
 	current_process->cycle_counter += current_cy - task_cy;
 }
 static inline void update_task_cycle_counter_stop(os_cy_t current_cy) {
@@ -105,14 +105,18 @@ uint8_t os_statistics_task_cpu_allocation(struct os_task *task)
 {
 	struct os_process *proc = os_task_get_process(task);
 	struct os_process *last_proc = proc->next;
-	uint8_t priority = 100 / os_process_get_priority(proc);
+#if CONFIG_OS_USE_PRIORITY == true
+	uint8_t priority = 100 / __os_process_get_priority(proc);
+#else
+	uint8_t priority = 100;
+#endif
 	uint16_t sum = priority;
 
 	// Loop into the task list
 	while (last_proc != proc) {
-		if (os_process_is_task(last_proc)) {
+		if (__os_process_is_task(last_proc)) {
 #if CONFIG_OS_USE_PRIORITY == true
-			sum += 100 / os_process_get_priority(last_proc);
+			sum += 100 / __os_process_get_priority(last_proc);
 #else
 			sum += 100;
 #endif

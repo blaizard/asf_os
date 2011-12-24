@@ -63,16 +63,16 @@ void os_mutex_lock(struct os_mutex *mutex)
 	/* If the mutex is not locked, lock it */
 	if (!mutex->is_locked) {
 		mutex->is_locked = true;
-		mutex->process = os_process_get_current();
+		mutex->process = __os_process_get_current();
 	}
 	/* If the mutex is already locked, suspend this task */
 	else {
 		/* Create a queue element, it will be stored on the stack. */
 		struct os_queue_process queue_elt;
 		/* Disable this process */
-		__os_process_disable(os_process_get_current());
+		__os_process_disable_naked(__os_process_get_current());
 		/* Set the data associated to this queue entry */
-		queue_elt.proc = os_process_get_current();
+		queue_elt.proc = __os_process_get_current();
 		/* Add this process to the event list of the mutex */
 		os_queue_process_add(&mutex->queue, &queue_elt);
 		/* Manually switch the process context */
@@ -87,7 +87,7 @@ void os_mutex_lock(struct os_mutex *mutex)
 void os_mutex_unlock(struct os_mutex *mutex)
 {
 	/* Only the process which locked the mutex can unlock it */
-	if (os_process_get_current() == mutex->process) {
+	if (__os_process_get_current() == mutex->process) {
 		/* Save the critical region status */
 		bool is_critical = os_is_critical();
 		/* Enter in a critical region if not already in */
@@ -102,7 +102,7 @@ void os_mutex_unlock(struct os_mutex *mutex)
 			/* Lock the mutex for this process */
 			mutex->process = proc;
 			/* Enable this process */
-			__os_process_enable(proc);
+			__os_process_enable_naked(proc);
 		}
 		/* Else unlock the mutex */
 		else {

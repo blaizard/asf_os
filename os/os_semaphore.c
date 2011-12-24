@@ -79,9 +79,9 @@ void os_semaphore_take(struct os_semaphore *sem)
 		/* Queue element used to hold the process in the waiting list */
 		struct os_queue_process queue_elt;
 		/* Disable this process */
-		__os_process_disable(os_process_get_current());
+		__os_process_disable_naked(__os_process_get_current());
 		/* Assign the data associated to this queue entry */
-		queue_elt.proc = os_process_get_current();
+		queue_elt.proc = __os_process_get_current();
 		/* Add this process to the event list of the sempahore */
 		os_queue_process_add(&sem->queue, &queue_elt);
 		/* Manually switch the process context */
@@ -108,7 +108,7 @@ void os_semaphore_release(struct os_semaphore *sem)
 		/* Pop the next process in the waiting list */
 		proc = os_queue_process_pop(&sem->queue)->proc;
 		/* Enable this process */
-		__os_process_enable(proc);
+		__os_process_enable_naked(proc);
 	}
 	/* Else check if the sempahore counter is not above the limit */
 	else if (sem->counter < sem->max) {

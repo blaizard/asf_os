@@ -79,16 +79,18 @@ static inline void __os_event_start(struct os_event *event,
 void os_event_scheduler(void)
 {
 	// Current event to process
-	struct os_event *event = os_current_event;
+	struct os_event *event;
 	enum os_event_status status = OS_EVENT_NONE;
+
+	// Loop through the event list
+	os_enter_critical();
+	event = os_current_event;
 
 	// If no events, disable the event process
 	if (!event) {
 		__os_process_event_disable();
 	}
 
-	// Loop through the event list
-	os_enter_critical();
 	while (event) {
 		do {
 			/* If the queue is not empty */
@@ -97,7 +99,7 @@ void os_event_scheduler(void)
 				/* Get the head element of the queue */
 				queue_elt = os_queue_event_head(os_event_get_queue(event));
 				/* Make sure the process is in pending state */
-				if (os_process_is_pending(queue_elt->proc)) {
+				if (__os_process_is_pending(queue_elt->proc)) {
 					// Check if the event has been triggered
 					status = event->desc.is_triggered(queue_elt->proc, event->args);
 					if (status != OS_EVENT_NONE) {
@@ -107,7 +109,7 @@ void os_event_scheduler(void)
 						// Remove the process from the event list;
 						os_queue_event_pop(os_event_get_queue_ptr(event));
 						// Activate the process
-						__os_process_enable(queue_elt->proc);
+						__os_process_enable_naked(queue_elt->proc);
 						/* Garbage collect, remove the other
 						 * queue entries associated to this process
 						 */
@@ -119,9 +121,10 @@ void os_event_scheduler(void)
 					}
 				}
 				/* If the process is pending, pop this process out
-				 * of the event list.
+				 * of the event list. This should never happen.
 				 */
 				else {
+					while (true);
 					/* Remove the not pending process from
 					 * the list.
 					 */
@@ -144,10 +147,10 @@ void os_event_scheduler(void)
 		event = event->next;
 	}
 
-	os_leave_critical();
-
 	// Call the scheduler
-	os_yield();
+	os_switch_context(false);
+
+	os_leave_critical();
 }
 
 struct __os_event_custom_function_args {
@@ -248,8 +251,8 @@ struct os_event *os_process_sleep(struct os_process *proc,
 	}
 
 	/* Disable the process (send it to sleep) */
-	if (os_process_is_enabled(proc)) {
-		__os_process_disable(proc);
+	if (__os_process_is_enabled(proc)) {
+		__os_process_disable_naked(proc);
 	}
 
 	/* Set the process status to pending */
@@ -283,7 +286,7 @@ struct os_event *os_process_sleep(struct os_process *proc,
 	/* If the process to be send to sleep is thye current process, stop it
 	 * and use a garbage collector wipe out the extra events registered.
 	 */
-	if (proc == os_process_get_current()) {
+	if (proc == __os_process_get_current()) {
 		/* Call the scheduler */
 		os_switch_context(false);
 	}

@@ -99,8 +99,8 @@ static inline struct os_process *os_interrupt_get_process(struct os_interrupt *i
  * \pre The interrupt must be previously setup with \ref os_interrupt_create
  */
 static inline void os_interrupt_trigger(struct os_interrupt *interrupt) {
-	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_TRIGGER, interrupt);
-	os_process_enable(os_interrupt_get_process(interrupt));
+	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_TRIGGER, interrupt);
+	__os_process_enable(os_interrupt_get_process(interrupt));
 }
 
 #if CONFIG_OS_USE_PRIORITY == true
@@ -112,8 +112,8 @@ static inline void os_interrupt_trigger(struct os_interrupt *interrupt) {
  */
 static inline void os_interrupt_set_priority(struct os_interrupt *interrupt,
 		enum os_priority priority) {
-	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_SET_PRIORITY, priority);
-	os_process_set_priority(os_interrupt_get_process(interrupt), priority);
+	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_SET_PRIORITY, priority);
+	__os_process_set_priority(os_interrupt_get_process(interrupt), priority);
 }
 /*! \brief Get the priority of a software interrupt
  * \ingroup group_os_public_api
@@ -123,8 +123,8 @@ static inline void os_interrupt_set_priority(struct os_interrupt *interrupt,
  */
 static inline enum os_priority os_interrupt_get_priority(struct os_interrupt *interrupt) {
 	enum os_priority priority;
-	priority = os_process_get_priority(os_interrupt_get_process(interrupt));
-	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_GET_PRIORITY, priority);
+	priority = __os_process_get_priority(os_interrupt_get_process(interrupt));
+	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_GET_PRIORITY, priority);
 	return (enum os_priority) priority;
 }
 #endif
@@ -163,7 +163,7 @@ void __os_interrupt_handler(os_ptr_t args);
 	#define OS_SCHEDULER_PRE_INTERRUPT_HOOK() \
 		do { \
 			if (__os_current_process->sp) { \
-				OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_CONTEXT_SWITCH, __os_current_process); \
+				__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_CONTEXT_SWITCH, __os_current_process); \
 				return __os_current_process; \
 			} \
 			__os_current_process->sp = os_app.sp; \
@@ -174,8 +174,8 @@ void __os_interrupt_handler(os_ptr_t args);
 
 	#define OS_SCHEDULER_POST_INTERRUPT_HOOK() \
 		do { \
-			if (os_process_is_interrupt(os_process_get_current())) { \
-				os_process_get_current()->sp = NULL; \
+			if (__os_process_is_interrupt(__os_process_get_current())) { \
+				__os_process_get_current()->sp = NULL; \
 			} \
 		} while (false)
 #endif

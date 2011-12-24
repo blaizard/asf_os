@@ -15,7 +15,7 @@
 #ifndef __OS_QUEUE_H__
 #define __OS_QUEUE_H__
 
-/*! \name Process waiting list helper function set
+/*! \name Process queue helper function set
  *
  * \{
  */
@@ -238,7 +238,7 @@ static inline void os_queue_bidirectional_process_add(struct os_queue_bidirectio
 static inline void os_queue_bidirectional_process_add(struct os_queue_bidirectional_process **first_elt,
 		struct os_queue_bidirectional_process *elt) {
 	os_queue_bidirectional_add_sort((struct os_queue_bidirectional **) first_elt,
-			(struct os_queue_bidirectional *) elt, os_queue_sort_fifo);
+			(struct os_queue_bidirectional *) elt, (os_queue_bidirectional_sort_t) os_queue_sort_fifo);
 }
 #endif
 

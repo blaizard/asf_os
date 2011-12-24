@@ -14,12 +14,20 @@
 
 #include "os_core.h"
 
+/*! \brief Flag set to true if the trace is activated, false otherwise.
+ */
 bool os_debug_trace_flag = false;
+/*! \brief Trace pointer, to keep track of the current trace entry.
+ */
 struct os_trace *os_debug_trace_ptr;
+/*! \brief Trace buffer starting point.
+ */
 static struct os_trace *os_debug_trace_start;
+/*! \brief Trace buffer ending point.
+ */
 static struct os_trace *os_debug_trace_end;
 
-void os_debug_trace_log(enum os_debug_trace_event event, os_ptr_t data)
+void __os_debug_trace_log(enum os_debug_trace_event event, os_ptr_t data)
 {
 	/* The following code is only activated if the trace is enabled */
 	if (os_debug_trace_flag) {

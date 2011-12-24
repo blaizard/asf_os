@@ -592,6 +592,7 @@ INPUT                  = \
 			../os_interrupt.c \
 			../os_event.c \
 			../os_core.h \
+			../os_queue.h \
 			../os_event.h \
 			../os_task.h \
 			../os_semaphore.h \

@@ -167,7 +167,7 @@ ISR(os_switch_context_int_handler, OS_SCHEDULER_IRQ_GROUP,
 
 	// Clear the interrupt flag
 	os_scheduler_clear_int();
-	os_switch_context_int_handler_hook();
+	__os_switch_context_int_handler_hook();
 
 	__asm__ __volatile__ (
 		// Update the stack pointer
@@ -231,7 +231,7 @@ __exception void _os_switch_context(void)
 
 	HOOK_OS_STATISTICS_SWITCH_CONTEXT_START(34);
 
-	os_switch_context_hook();
+	__os_switch_context_hook();
 
 	__asm__ __volatile__ (
 		// Update the stack pointer

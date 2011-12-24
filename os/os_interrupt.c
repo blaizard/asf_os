@@ -23,7 +23,7 @@ void __os_interrupt_handler(os_ptr_t args)
 	// Disable scheduler interrupts
 	os_enter_critical();
 	// Remove the interrupt from the chain list to prevent another execution
-	__os_process_disable(os_interrupt_get_process(interrupt));
+	__os_process_disable_naked(os_interrupt_get_process(interrupt));
 	// Execute the interrupt handler
 	interrupt->int_ptr(interrupt->args);
 	// Manually call the scheduler
@@ -33,7 +33,7 @@ void __os_interrupt_handler(os_ptr_t args)
 void os_interrupt_create(struct os_interrupt *interrupt, os_proc_ptr_t int_ptr,
 		os_ptr_t args)
 {
-	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_CREATE, interrupt);
+	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_CREATE, interrupt);
 
 	// Create the process
 	__os_process_create(os_interrupt_get_process(interrupt), NULL,

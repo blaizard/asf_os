@@ -20,7 +20,7 @@ void os_task_delay(os_tick_t tick_nb)
 	extern volatile os_tick_t os_tick_counter;
 	os_tick_t start_tick, last_tick;
 
-	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_DELAY_START, tick_nb);
+	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_DELAY_START, tick_nb);
 
 	start_tick = os_tick_counter;
 	last_tick = os_tick_counter + tick_nb;
@@ -34,14 +34,14 @@ void os_task_delay(os_tick_t tick_nb)
 		os_yield();
 	}
 
-	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_DELAY_STOP, tick_nb);
+	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_DELAY_STOP, tick_nb);
 }
 #endif
 
 bool os_task_create(struct os_task *task, os_proc_ptr_t task_ptr, os_ptr_t args,
 		int stack_size, enum os_task_option options)
 {
-	OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_CREATE, task);
+	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_CREATE, task);
 
 #if CONFIG_OS_USE_MALLOC == true
 	if (!(options & OS_TASK_USE_CUSTOM_STACK)) {
@@ -55,7 +55,7 @@ bool os_task_create(struct os_task *task, os_proc_ptr_t task_ptr, os_ptr_t args,
 	__os_process_create(os_task_get_process(task), &task->stack[stack_size],
 			OS_PROCESS_TYPE_TASK);
 #if CONFIG_OS_DEBUG == true
-	HOOK_OS_DEBUG_TASK_ADD();
+	__HOOK_OS_DEBUG_TASK_ADD();
 #endif
 	// Save the options
 	task->options = options;
@@ -77,8 +77,8 @@ bool os_task_create(struct os_task *task, os_proc_ptr_t task_ptr, os_ptr_t args,
 
 struct os_task *os_task_get_current(void)
 {
-	if (os_process_is_task(os_process_get_current())) {
-		return os_task_from_process(os_process_get_current());
+	if (__os_process_is_task(__os_process_get_current())) {
+		return os_task_from_process(__os_process_get_current());
 	}
 	return NULL;
 }
