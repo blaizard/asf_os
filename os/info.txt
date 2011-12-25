@@ -1,0 +1,33 @@
+Competitors:
+- Micrium uc/OS
+- FreeRTOS
+- eCos
+- vxWorks
+- AVIX-RT (http://www.avix-rt.com)
+
+
+RTOS survey:
+
+Evans Data Corporation’s Surveys reveal 
+the Top 5 RTOS Features most valued by 
+developers:
+1. Real-time responsiveness (33.2%)
+2. Royalty-free pricing (14.7%)
+3. Source code availability (10.6%)
+4. Tools integration (IDE) (10.1%)
+5. Microprocessor coverage (7.8%)
+Source:
+http://www.evansdata.com/n2/surveys/embedded/2003_1/embedded_xmp1.shtml
+
+and
+
+http://i.cmpnet.com/embedded/gifs/2007/0705/0507esdCarbone01.gif
+
+
+
+
+
+Benchmark:
+http://www.rtos.com/PDFs/MeasuringRTOSPerformance.pdf
+http://rtos.com/
+http://www.embeddedstar.com/weblog/2008/01/31/express-logic-threadx-mcu/

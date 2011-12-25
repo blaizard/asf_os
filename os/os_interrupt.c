@@ -1,5 +1,5 @@
 /*! \file
- * \brief eeOS Interrupts
+ * \brief eeOS Software Interrupts
  * \author Blaise Lengrand (blaise.lengrand@gmail.com)
  * \version 0.1
  * \date 2011
@@ -14,19 +14,18 @@
 
 #include "os_core.h"
 
-#if CONFIG_OS_USE_SW_INTERRUPTS == true
-
 void __os_interrupt_handler(os_ptr_t args)
 {
 	struct os_interrupt *interrupt = (struct os_interrupt *) args;
 
-	// Disable scheduler interrupts
+	/* Disable scheduler interrupts */
 	os_enter_critical();
-	// Remove the interrupt from the chain list to prevent another execution
-	__os_process_disable_naked(os_interrupt_get_process(interrupt));
-	// Execute the interrupt handler
+	/* Remove the interrupt from the chain list to prevent another execution
+	 */
+	__os_process_disable_naked(__os_interrupt_get_process(interrupt));
+	/* Execute the interrupt handler */
 	interrupt->int_ptr(interrupt->args);
-	// Manually call the scheduler
+	/* Manually call the scheduler */
 	os_switch_context(true);
 }
 
@@ -35,16 +34,15 @@ void os_interrupt_create(struct os_interrupt *interrupt, os_proc_ptr_t int_ptr,
 {
 	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_CREATE, interrupt);
 
-	// Create the process
-	__os_process_create(os_interrupt_get_process(interrupt), NULL,
+	/* Create the process */
+	__os_process_create(__os_interrupt_get_process(interrupt), NULL,
 			OS_PROCESS_TYPE_INTERRUPT);
-	// Fill the structure
+	/* Fill the structure */
 	interrupt->int_ptr = int_ptr;
 	interrupt->args = args;
-	// Set default priority to the interrupt
+	/* Set default priority for the interrupt */
 #if CONFIG_OS_USE_PRIORITY == true
-	os_interrupt_set_priority(interrupt, CONFIG_OS_INTERRUPT_DEFAULT_PRIORITY);
+	os_interrupt_set_priority(interrupt,
+			CONFIG_OS_INTERRUPT_DEFAULT_PRIORITY);
 #endif
 }
-
-#endif

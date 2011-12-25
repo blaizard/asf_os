@@ -1,5 +1,5 @@
 /*! \file
- * \brief eeOS Interrupts
+ * \brief eeOS Software Interrupts
  * \author Blaise Lengrand (blaise.lengrand@gmail.com)
  * \version 0.1
  * \date 2011
@@ -15,6 +15,52 @@
 #ifndef __OS_INTERRUPT_H__
 #define __OS_INTERRUPT_H__
 
+/* Configuration options ******************************************************/
+
+/*! \def CONFIG_OS_USE_SW_INTERRUPTS
+ * \brief Use this option to enable software interrupts.
+ * \ingroup group_os_config
+ */
+#ifndef CONFIG_OS_USE_SW_INTERRUPTS
+	#define CONFIG_OS_USE_SW_INTERRUPTS false
+#endif
+
+/*! \def CONFIG_OS_INTERRUPT_DEFAULT_PRIORITY
+ * \brief Default priority assgined to an interrupt
+ * \ingroup group_os_config
+ */
+#ifndef CONFIG_OS_INTERRUPT_DEFAULT_PRIORITY
+	#define CONFIG_OS_INTERRUPT_DEFAULT_PRIORITY OS_PRIORITY_1
+#endif
+
+/* Macros *********************************************************************/
+
+#if CONFIG_OS_USE_SW_INTERRUPTS == true
+	#define OS_SCHEDULER_PRE_INTERRUPT_HOOK() \
+		do { \
+			if (__os_current_process->sp) { \
+				__HOOK_OS_DEBUG_TRACE_LOG( \
+						OS_DEBUG_TRACE_CONTEXT_SWITCH, \
+						__os_current_process); \
+				return __os_current_process; \
+			} \
+			__os_current_process->sp = os_app.sp; \
+			os_process_context_load(__os_current_process, \
+					__os_interrupt_handler, \
+					(os_ptr_t) __os_current_process); \
+		} while (false)
+
+	#define OS_SCHEDULER_POST_INTERRUPT_HOOK() \
+		do { \
+			if (__os_process_is_interrupt( \
+					__os_process_get_current())) { \
+				__os_process_get_current()->sp = NULL; \
+			} \
+		} while (false)
+#endif
+
+/* Types **********************************************************************/
+
 /*! \brief Software interrupt structure
  */
 struct os_interrupt {
@@ -29,28 +75,35 @@ struct os_interrupt {
 	os_ptr_t args;
 };
 
-/*! \ingroup group_os_config
- *
- * \{
- */
+/* Internal API ***************************************************************/
 
-/*! \def CONFIG_OS_USE_SW_INTERRUPTS
- * \brief Use this option to enable software interrupts.
+/*! \brief Get the interrupt associated with a process
+ * \ingroup group_os_internal_api
+ * \param proc the process
+ * \return The interrupt pointer
  */
-#ifndef CONFIG_OS_USE_SW_INTERRUPTS
-	#define CONFIG_OS_USE_SW_INTERRUPTS false
-#endif
+static inline struct os_interrupt *__os_interrupt_from_process(
+		struct os_process *proc) {
+	return OS_CONTAINER_OF(proc, struct os_interrupt, core);
+}
 
-/*! \def CONFIG_OS_INTERRUPT_DEFAULT_PRIORITY
- * \brief Default priority assgined to an interrupt
+/*! \brief Get the interrupt process
+ * \ingroup group_os_internal_api
+ * \param interrupt The interrupt
+ * \return The process of the interrupt
  */
-#ifndef CONFIG_OS_INTERRUPT_DEFAULT_PRIORITY
-	#define CONFIG_OS_INTERRUPT_DEFAULT_PRIORITY OS_PRIORITY_1
-#endif
+static inline struct os_process *__os_interrupt_get_process(
+		struct os_interrupt *interrupt) {
+	return &interrupt->core;
+}
 
-/*!
- * \}
+/*! \brief Software interrupt handler
+ * \ingroup group_os_internal_api
+ * \param args A pointer on a \ref os_interrupt structure
  */
+void __os_interrupt_handler(os_ptr_t args);
+
+/* Public API *****************************************************************/
 
 /*! \name Software Interrupts
  *
@@ -60,8 +113,6 @@ struct os_interrupt {
  * from the same priority scheme than a task.
  *
  * \pre \ref CONFIG_OS_USE_SW_INTERRUPTS needs to be set
- *
- * \ingroup group_os_public_api
  *
  * \{
  */
@@ -77,22 +128,6 @@ struct os_interrupt {
 void os_interrupt_create(struct os_interrupt *interrupt, os_proc_ptr_t int_ptr,
 		os_ptr_t args);
 
-/*! \brief Get the interrupt associated with a process
- * \param proc the process
- * \return The interrupt pointer
- */
-static inline struct os_interrupt *os_interrupt_from_process(struct os_process *proc) {
-	return OS_CONTAINER_OF(proc, struct os_interrupt, core);
-}
-
-/*! \brief Get the interrupt process
- * \param interrupt The interrupt
- * \return The process of the interrupt
- */
-static inline struct os_process *os_interrupt_get_process(struct os_interrupt *interrupt) {
-	return &interrupt->core;
-}
-
 /*! \brief Manually trigger a software interrupt.
  * \ingroup group_os_public_api
  * \param interrupt The interrupt to trigger
@@ -100,7 +135,7 @@ static inline struct os_process *os_interrupt_get_process(struct os_interrupt *i
  */
 static inline void os_interrupt_trigger(struct os_interrupt *interrupt) {
 	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_TRIGGER, interrupt);
-	__os_process_enable(os_interrupt_get_process(interrupt));
+	__os_process_enable(__os_interrupt_get_process(interrupt));
 }
 
 #if CONFIG_OS_USE_PRIORITY == true
@@ -112,8 +147,10 @@ static inline void os_interrupt_trigger(struct os_interrupt *interrupt) {
  */
 static inline void os_interrupt_set_priority(struct os_interrupt *interrupt,
 		enum os_priority priority) {
-	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_SET_PRIORITY, priority);
-	__os_process_set_priority(os_interrupt_get_process(interrupt), priority);
+	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_SET_PRIORITY,
+			priority);
+	__os_process_set_priority(__os_interrupt_get_process(interrupt),
+			priority);
 }
 /*! \brief Get the priority of a software interrupt
  * \ingroup group_os_public_api
@@ -121,10 +158,13 @@ static inline void os_interrupt_set_priority(struct os_interrupt *interrupt,
  * \return The interrupt priority
  * \pre \ref CONFIG_OS_USE_PRIORITY needs to be set first
  */
-static inline enum os_priority os_interrupt_get_priority(struct os_interrupt *interrupt) {
+static inline enum os_priority os_interrupt_get_priority(
+		struct os_interrupt *interrupt) {
 	enum os_priority priority;
-	priority = __os_process_get_priority(os_interrupt_get_process(interrupt));
-	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_GET_PRIORITY, priority);
+	priority = __os_process_get_priority(__os_interrupt_get_process(
+			interrupt));
+	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_INTERRUPT_GET_PRIORITY,
+			priority);
 	return (enum os_priority) priority;
 }
 #endif
@@ -143,41 +183,5 @@ void os_interrupt_trigger_on_event(struct os_interrupt *interrupt,
 /*!
  * \}
  */
-
-/*!
- * \ingroup group_os_internal_api
- * \{
- */
-
-/*! \brief Software interrupt handler
- * \ingroup group_os_internal_api
- * \param args A pointer on a \ref os_interrupt structure
- */
-void __os_interrupt_handler(os_ptr_t args);
-
-/*!
- * \}
- */
-
-#if CONFIG_OS_USE_SW_INTERRUPTS == true
-	#define OS_SCHEDULER_PRE_INTERRUPT_HOOK() \
-		do { \
-			if (__os_current_process->sp) { \
-				__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_CONTEXT_SWITCH, __os_current_process); \
-				return __os_current_process; \
-			} \
-			__os_current_process->sp = os_app.sp; \
-			os_process_context_load(__os_current_process, \
-					__os_interrupt_handler, \
-					(os_ptr_t) __os_current_process); \
-		} while (false)
-
-	#define OS_SCHEDULER_POST_INTERRUPT_HOOK() \
-		do { \
-			if (__os_process_is_interrupt(__os_process_get_current())) { \
-				__os_process_get_current()->sp = NULL; \
-			} \
-		} while (false)
-#endif
 
 #endif // __OS_INTERRUPT_H__

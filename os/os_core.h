@@ -15,9 +15,6 @@
 #ifndef __OS_CORE_H__
 #define __OS_CORE_H__
 
-#include "os_port.h"
-#include "conf_os.h"
-
 /*! \defgroup group_os eeOS
  * \brief eeOS is a Embedded Event-driven Operating System.
  * This page contains all the documentation related to this operating
@@ -138,6 +135,11 @@
 /*! \brief Current version of the operating system.
  */
 #define OS_VERSION "0.1"
+
+/* Configuration **************************************************************/
+
+#include "os_port.h"
+#include "conf_os.h"
 
 /* Configuration options ******************************************************/
 
@@ -354,6 +356,7 @@
 		(sizeof((os_ptr_t []) {__VA_ARGS__}) / sizeof(os_ptr_t))
 
 /*! \brief Allocate memory for the stack
+ *
  * This macro can be used with \ref OS_TASK_USE_CUSTOM_STACK in order to
  * manually allocate some memory for the stack.
  * Here is an example code to use this macro:
@@ -704,8 +707,8 @@ static inline enum os_priority __os_process_get_priority(struct os_process *proc
  */
 struct os_process *__os_scheduler(void);
 
-/*!
- * \brief This function must be called inside the
+/*! \brief This function must be called inside the
+ * \ingroup group_os_internal_api
  * \ref os_switch_context function in order to switch process context.
  * \return The context of the new process
  */
@@ -723,6 +726,7 @@ static inline struct os_process *__os_switch_context_hook(void) {
 }
 
 /*! \brief Initializes a process
+ * \ingroup group_os_internal_api
  * \param proc The process to be initialized
  * \param sp The stack pointer
  * \param type The type of process
@@ -742,6 +746,7 @@ static inline void __os_process_create(struct os_process *proc, os_ptr_t sp,
 }
 
 /*! \brief Get the application process
+ * \ingroup group_os_internal_api
  * \return the application process
  */
 static inline struct os_process *__os_process_get_application(void) {
@@ -749,6 +754,7 @@ static inline struct os_process *__os_process_get_application(void) {
 	return &os_app;
 }
 /*! \brief Enable the application process
+ * \ingroup group_os_internal_api
  */
 static inline void __os_process_application_enable(void) {
 	extern struct os_process os_app;
@@ -756,6 +762,7 @@ static inline void __os_process_application_enable(void) {
 	os_app.type = OS_PROCESS_TYPE_APPLICATION;
 }
 /*! \brief Disable the application process
+ * \ingroup group_os_internal_api
  */
 static inline void __os_process_application_disable(void) {
 	extern struct os_process os_app;
@@ -766,6 +773,7 @@ static inline void __os_process_application_disable(void) {
 /*! \brief Enable the event process
  * If the event process is enabled, the application process will be disabled
  * as they share the same process.
+ * \ingroup group_os_internal_api
  */
 static inline void __os_process_event_enable(void) {
 	extern struct os_process os_app;
@@ -775,6 +783,7 @@ static inline void __os_process_event_enable(void) {
 /*! \brief Enable the event process
  * If the event process is enabled, the application process will be disabled
  * as they share the same process.
+ * \ingroup group_os_internal_api
  */
 static inline void __os_process_event_disable(void) {
 	extern struct os_process os_app;
@@ -787,12 +796,14 @@ static inline void __os_process_event_disable(void) {
  * This function will push the task at the end of the chain list
  * \warning This function does not check if the task is already added to the
  * list and should be used inside a critical area.
+ * \ingroup group_os_internal_api
  */
 void __os_process_enable_naked(struct os_process *proc);
 /*! \copydoc __os_process_disable
  * \warning This function does not check if the task is already disabled and
  * should be used inside a critical area. It also does not stop after the
  * execution of this function.
+ * \ingroup group_os_internal_api
  */
 void __os_process_disable_naked(struct os_process *proc);
 
@@ -861,7 +872,7 @@ static inline void os_start(uint32_t ref_hz) {
 	while (true) {
 		/* If the event process is running, call the event scheduler */
 		if (__os_process_is_event(__os_process_get_current())) {
-			os_event_scheduler();
+			__os_event_scheduler();
 		}
 		/* Else it means the application process is running. In other
 		 * word, not other processes are actives or pending for events.

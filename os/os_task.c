@@ -52,8 +52,8 @@ bool os_task_create(struct os_task *task, os_proc_ptr_t task_ptr, os_ptr_t args,
 	}
 #endif
 	// Create the process
-	__os_process_create(os_task_get_process(task), &task->stack[stack_size],
-			OS_PROCESS_TYPE_TASK);
+	__os_process_create(__os_task_get_process(task),
+			&task->stack[stack_size], OS_PROCESS_TYPE_TASK);
 #if CONFIG_OS_DEBUG == true
 	__HOOK_OS_DEBUG_TASK_ADD();
 #endif
@@ -78,7 +78,7 @@ bool os_task_create(struct os_task *task, os_proc_ptr_t task_ptr, os_ptr_t args,
 struct os_task *os_task_get_current(void)
 {
 	if (__os_process_is_task(__os_process_get_current())) {
-		return os_task_from_process(__os_process_get_current());
+		return __os_task_from_process(__os_process_get_current());
 	}
 	return NULL;
 }

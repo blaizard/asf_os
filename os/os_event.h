@@ -15,6 +15,36 @@
 #ifndef __OS_EVENT_H__
 #define __OS_EVENT_H__
 
+/*! \addtogroup group_os
+ * \section section_os_event Events
+ *
+ * Events (\ref os_event) are used to wake up or call one or multiple processes.
+ * When a process is sleeping it will be removed from the active process list,
+ * therefore the performance will not be decreased.
+ *
+ * Events are stored in a chain list as follow, where \i E are events and \i P
+ * are processes:
+ * \code
+ *  E1 -> E2 -> E3 -> NULL
+ *  P1    P6    P3
+ * NULL   P7   NULL
+ *       NULL
+ * \endcode
+ * When an event has no process, it is removed from the active event list.
+ */
+
+/* Configuration options ******************************************************/
+
+/*! \def CONFIG_OS_USE_EVENTS
+ * \brief Use this option to enable event support.
+ * \ingroup group_os_config
+ */
+#ifndef CONFIG_OS_USE_EVENTS
+	#define CONFIG_OS_USE_EVENTS false
+#endif
+
+/* Types **********************************************************************/
+
 /*! \brief Status returned by an event
  */
 enum os_event_status {
@@ -34,22 +64,6 @@ enum os_event_status {
 	 */
 	OS_EVENT_OK_CONTINUE = 1,
 };
-
-/*! \ingroup group_os_config
- *
- * \{
- */
-
-/*! \def CONFIG_OS_USE_EVENTS
- * \brief Use this option to enable event support.
- */
-#ifndef CONFIG_OS_USE_EVENTS
-	#define CONFIG_OS_USE_EVENTS false
-#endif
-
-/*!
- * \}
- */
 
 /*! \brief Event descriptor
  */
@@ -80,27 +94,20 @@ struct os_event_descriptor {
 	enum os_event_status (*is_triggered)(struct os_process *proc, os_ptr_t args);
 };
 
-/*! \addtogroup group_os
- * \section section_os_event Events
- *
- * Events (\ref os_event) are used to wake up or call one or multiple processes.
- * When a process is sleeping it will be removed from the active process list,
- * therefore the performance will not be decreased.
- *
- * Events are stored in a chain list as follow, where \i E are events and \i P
- * are processes:
- * \code
- *  E1 -> E2 -> E3 -> NULL
- *  P1    P6    P3
- * NULL   P7   NULL
- *       NULL
- * \endcode
- * When an event has no process, it is removed from the active event list.
+/*! \struct os_queue_event
+ * \brief Event queue structure definition (see
+ * \ref OS_QUEUE_BIDIRECTIONAL_DEFINE for more details). This structure is used
+ * to hold and link a process with an event.
  */
-
 OS_QUEUE_BIDIRECTIONAL_DEFINE(event,
+	/*! \brief Process associated with the event */
 	struct os_process *proc;
+	/*! \brief Pointer on a variable to be notified when the evenr triggers
+	 */
 	struct os_event **event_triggered;
+	/*! To keep track of the similar process entries created and associated
+	 * with other processes
+	 */
 	struct os_queue_event *relation;
 )
 
@@ -124,41 +131,16 @@ struct os_event {
 	os_ptr_t args;
 };
 
-/*! \name Events
- *
- * Set of functions to create and manage events
- *
- * \{
+/*! \brief Internal structure to fit a boolean function in a event
  */
+struct __os_event_custom_function_args {
+	/* Pointer on the boolean function */
+	bool (*trigger)(os_ptr_t);
+	/* Arguments that will be passed to the boolean function */
+	os_ptr_t args;
+};
 
-/*! \brief Create a custom event from a function
- * \ingroup group_os_public_api
- * \param event The un-initialized event structure to be filled
- * \param trigger The boolean function to trigger the event. The event will be
- * triggered when this function returns true.
- * \param args Arguments to pass to the trigger function
- */
-void os_event_create_from_function(struct os_event *event,
-		bool (*trigger)(os_ptr_t), os_ptr_t args);
-
-/*!
- * \}
- */
-
-/*!
- * \name Event Helper Functions
- * \{
- */
-/*!
- * \}
- */
-
-/*! \brief Event scheduler
- * \ingroup group_os_internal_api
- * \return true if at least 1 event is present in the event list, false
- * otherwise.
- */
-void os_event_scheduler(void);
+/* Internal API ***************************************************************/
 
 /*! \brief Create a new event
  * \ingroup group_os_internal_api
@@ -168,18 +150,54 @@ void os_event_scheduler(void);
  * to be used.
  * \param args Argument which will be passed to the event descriptor functions.
  */
-void os_event_create(struct os_event *event,
+void __os_event_create(struct os_event *event,
 		const struct os_event_descriptor *descriptor, os_ptr_t args);
 
-static inline bool os_event_is_empty(struct os_event *event) {
+/*! \brief Internal handler for the boolean function
+ * \ingroup group_os_internal_api
+ * \param proc Process associated to the event
+ * \param args Extra arguments to pass to this function. Arguments are a pointer
+ * of type \ref __os_event_custom_function_args
+ * \return The status of the trigger function
+ */
+enum os_event_status __os_event_custom_function_handler(struct os_process *proc,
+		os_ptr_t args);
+
+/*! \brief Event scheduler
+ * \ingroup group_os_internal_api
+ */
+void __os_event_scheduler(void);
+
+/*! \brief This function test a event structure and notifies if it has any
+ * remaining process in its queue.
+ * \ingroup group_os_internal_api
+ * \param event The event to be tested
+ * \return true if there are no process in the queue, false otherwise.
+ */
+static inline bool __os_event_is_empty(struct os_event *event) {
 	return (bool) !(event->queue.next);
 }
 
-static inline bool os_event_is_enabled(struct os_event *event) {
+/*! \brief Checks if an event is enabled, in other word, test if it is in the
+ * active event list.
+ * \ingroup group_os_internal_api
+ * \param event The event to be checked
+ * \return true if the event is enabled, false otherwise.
+ */
+static inline bool __os_event_is_enabled(struct os_event *event) {
 	return (bool) (event->queue.next);
 }
 
-struct os_event *os_process_sleep(struct os_process *proc,
+/*! \brief Generic function to send a processus to sleep
+ * \ingroup group_os_internal_api
+ * \param proc The processus to send to sleep
+ * \param queue_elt The empty \ref os_queue_event structure to hold each
+ * process instance in the events used to wake up the process.
+ * \param nb_events The number of events defined to wake up this process
+ * \param ... A list of \ref os_event which can wake up this process
+ * \return A pointer on the event which woke up the process
+ */
+struct os_event *__os_process_sleep(struct os_process *proc,
 		struct os_queue_event *queue_elt, int nb_events, ...);
 
 /*! \brief Associate a process with an event and enable the event
@@ -194,12 +212,60 @@ struct os_event *os_process_sleep(struct os_process *proc,
 void __os_event_register(struct os_event *event, struct os_queue_event *queue_elt,
 		struct os_process *proc, struct os_event **event_triggered);
 
-static inline struct os_queue_event *os_event_get_queue(struct os_event *event) {
+/*! \brief Get the \ref os_queue_event pointer associated with an event
+ * \ingroup group_os_internal_api
+ * \param event The event from which we want to get the structure
+ * \return The \ref os_queue_pointer, or NULL if no processes are associated
+ * with this event
+ */
+static inline struct os_queue_event *__os_event_get_queue(struct os_event *event) {
 	return (struct os_queue_event *) event->queue.next;
 }
 
-static inline struct os_queue_event **os_event_get_queue_ptr(struct os_event *event) {
+/*! \brief Get the pointer on the variable that hold the \ref os_queue_event
+ * structure associated with an event.
+ * \ingroup group_os_internal_api
+ * \param event The event we need to get data from
+ * \return A pointer on the variable which holds the \ref os_queue_event
+ * structure associated with this event
+ */
+static inline struct os_queue_event **__os_event_get_queue_ptr(struct os_event *event) {
 	return (struct os_queue_event **) &event->queue.next;
 }
+
+/* Public API *****************************************************************/
+
+/*! \name Events
+ *
+ * Set of functions to create and manage events
+ *
+ * \{
+ */
+
+/*! \brief Create a custom event from a function
+ * \ingroup group_os_public_api
+ * \param event The un-initialized event structure to be filled
+ * \param trigger The boolean function to trigger the event. The event will be
+ * triggered when this function returns true.
+ * \param args Arguments to pass to the trigger function
+ */
+static inline void os_event_create_from_function(struct os_event *event,
+		bool (*trigger)(os_ptr_t), os_ptr_t args) {
+	/* Create the event descriptor function */
+	const struct os_event_descriptor descriptor = {
+		.is_triggered = __os_event_custom_function_handler
+	};
+	/* Create the boolean function */
+	struct __os_event_custom_function_args custom_args = {
+		.trigger = trigger,
+		.args = args
+	};
+	/* Create an event out of this */
+	__os_event_create(event, &descriptor, (os_ptr_t) &custom_args);
+}
+
+/*!
+ * \}
+ */
 
 #endif // __OS_EVENT_H__

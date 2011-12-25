@@ -103,7 +103,7 @@ os_cy_t os_statistics_get_task_switch_time(void)
  */
 uint8_t os_statistics_task_cpu_allocation(struct os_task *task)
 {
-	struct os_process *proc = os_task_get_process(task);
+	struct os_process *proc = __os_task_get_process(task);
 	struct os_process *last_proc = proc->next;
 #if CONFIG_OS_USE_PRIORITY == true
 	uint8_t priority = 100 / __os_process_get_priority(proc);

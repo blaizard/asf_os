@@ -97,11 +97,10 @@
  */
 #define __HOOK_OS_DEBUG_TASK_ADD() \
 		do { \
-			const uint8_t debug_pattern = \
-					CONFIG_OS_DEBUG_UINT8_PATTERN; \
 			int i; \
 			for (i=0; i<stack_size; i++) { \
-				((uint8_t *) task->stack)[i] = debug_pattern; \
+				((uint8_t *) task->stack)[i] = \
+						CONFIG_OS_DEBUG_UINT8_PATTERN; \
 			} \
 		} while (false);
 

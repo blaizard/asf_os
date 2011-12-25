@@ -69,7 +69,7 @@ void os_task_delay(os_tick_t tick_nb);
  * \param proc the process
  * \return The task pointer
  */
-static inline struct os_task *os_task_from_process(struct os_process *proc) {
+static inline struct os_task *__os_task_from_process(struct os_process *proc) {
 	return OS_CONTAINER_OF(proc, struct os_task, core);
 }
 
@@ -78,7 +78,7 @@ static inline struct os_task *os_task_from_process(struct os_process *proc) {
  * \param task The task
  * \return The process of the task
  */
-static inline struct os_process *os_task_get_process(struct os_task *task) {
+static inline struct os_process *__os_task_get_process(struct os_task *task) {
 	return &task->core;
 }
 
@@ -91,7 +91,7 @@ static inline struct os_process *os_task_get_process(struct os_task *task) {
 static inline void os_task_set_priority(struct os_task *task,
 		enum os_priority priority) {
 	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_SET_PRIORITY, priority);
-	__os_process_set_priority(os_task_get_process(task), priority);
+	__os_process_set_priority(__os_task_get_process(task), priority);
 }
 /*! \brief Get the priority of a task
  * \ingroup group_os_public_api
@@ -100,7 +100,7 @@ static inline void os_task_set_priority(struct os_task *task,
  */
 static inline enum os_priority os_task_get_priority(struct os_task *task) {
 	enum os_priority priority;
-	priority = __os_process_get_priority(os_task_get_process(task));
+	priority = __os_process_get_priority(__os_task_get_process(task));
 	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_GET_PRIORITY, priority);
 	return (enum os_priority) priority;
 }
@@ -112,7 +112,7 @@ static inline enum os_priority os_task_get_priority(struct os_task *task) {
  */
 static inline void os_task_delete(struct os_task *task) {
 	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_DELETE, task);
-	__os_process_disable(os_task_get_process(task));
+	__os_process_disable(__os_task_get_process(task));
 	// Free the task stack if needed
 	if (!(task->options & OS_TASK_USE_CUSTOM_STACK)) {
 		os_free(task->stack);
@@ -125,7 +125,7 @@ static inline void os_task_delete(struct os_task *task) {
  */
 static inline void os_task_enable(struct os_task *task) {
 	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_ENABLE, task);
-	__os_process_enable(os_task_get_process(task));
+	__os_process_enable(__os_task_get_process(task));
 }
 
 /*! \brief Disable the execution of a task
@@ -134,7 +134,7 @@ static inline void os_task_enable(struct os_task *task) {
  */
 static inline void os_task_disable(struct os_task *task) {
 	__HOOK_OS_DEBUG_TRACE_LOG(OS_DEBUG_TRACE_TASK_DISABLE, task);
-	__os_process_disable(os_task_get_process(task));
+	__os_process_disable(__os_task_get_process(task));
 }
 
 /*! \brief Check wether a task is enabled or not
@@ -143,7 +143,7 @@ static inline void os_task_disable(struct os_task *task) {
  * \return true if enabled, false otherwise
  */
 static inline bool os_task_is_enabled(struct os_task *task) {
-	return __os_process_is_enabled(os_task_get_process(task));
+	return __os_process_is_enabled(__os_task_get_process(task));
 }
 
 /*! \brief Get the current running task
@@ -161,7 +161,7 @@ struct os_task *os_task_get_current(void);
 #define os_task_sleep(...) \
 		do { \
 			struct os_queue_event __queue_elt[OS_NB_ARGS(__VA_ARGS__)]; \
-			os_process_sleep(__os_process_get_current(), \
+			__os_process_sleep(__os_process_get_current(), \
 				__queue_elt, OS_NB_ARGS(__VA_ARGS__), \
 				__VA_ARGS__); \
 		} while (false);
@@ -175,7 +175,8 @@ struct os_task *os_task_get_current(void);
 #define os_task_sleep_ex(event_triggered, ...) \
 		do { \
 			struct os_queue_event __queue_elt[OS_NB_ARGS(__VA_ARGS__)]; \
-			event_triggered = os_process_sleep(__os_process_get_current(), \
+			event_triggered = __os_process_sleep( \
+					__os_process_get_current(), \
 				__queue_elt, OS_NB_ARGS(__VA_ARGS__), \
 				__VA_ARGS__); \
 		} while (false);

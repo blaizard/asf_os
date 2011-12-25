@@ -77,7 +77,7 @@ static inline void os_binary_semaphore_create(struct os_semaphore *sem) {
 static inline void os_semaphore_create_event(struct os_event *event,
 		struct os_semaphore *sem) {
 	extern const struct os_event_descriptor semaphore_event_descriptor;
-	os_event_create(event, &semaphore_event_descriptor, (os_ptr_t) sem);
+	__os_event_create(event, &semaphore_event_descriptor, (os_ptr_t) sem);
 }
 
 /*! \brief Get a semaphore out of a \ref os_event structure.

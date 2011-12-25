@@ -14,23 +14,12 @@
 
 #include "os_core.h"
 
-/*! \name Private functions
- * \{
- */
-static enum os_event_status __os_event_mutex_is_triggered(struct os_process *proc,
-		os_ptr_t args);
-/*!
- * \}
- */
-
-const struct os_event_descriptor mutex_event_descriptor = {
-	.is_triggered = __os_event_mutex_is_triggered
-};
-
-static enum os_event_status __os_event_mutex_is_triggered(struct os_process *proc,
+enum os_event_status __os_event_mutex_is_triggered(struct os_process *proc,
 		os_ptr_t args)
 {
+	/* Output status of the event */
 	enum os_event_status status = OS_EVENT_NONE;
+	/* Cast the arguments to a \ref os_mutex structure */
 	struct os_mutex *mutex = (struct os_mutex *) args;
 	/* Save the critical region status */
 	bool is_critical = os_is_critical();
@@ -39,15 +28,21 @@ static enum os_event_status __os_event_mutex_is_triggered(struct os_process *pro
 	if (!is_critical) {
 		os_enter_critical();
 	}
+	/* Test if the mutex is not locked */
 	if (!mutex->is_locked) {
+		/* lock it */
 		mutex->is_locked = true;
+		/* Associate a process with this mutex */
 		mutex->process = proc;
+		/* Set the status of this event to triggered */
 		status = OS_EVENT_OK_STOP;
 	}
+	/* Leave the critical section */
 	if (!is_critical) {
 		os_leave_critical();
 	}
 
+	/* Return the event status */
 	return status;
 }
 

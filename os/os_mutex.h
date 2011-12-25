@@ -15,6 +15,8 @@
 #ifndef __OS_MUTEX_H__
 #define __OS_MUTEX_H__
 
+/* Types **********************************************************************/
+
 /*! \brief Mutex Structure
  */
 struct os_mutex {
@@ -28,6 +30,19 @@ struct os_mutex {
 	 */
 	struct os_queue_process *queue;
 };
+
+/* Internal API ***************************************************************/
+
+/*! \brief Declaration of the event trigger function for a mutex
+ * \ingroup group_os_internal_api
+ * \param proc The process associated with this event
+ * \param args Extra arguments
+ * \return Returned if the event triggered or not
+ */
+enum os_event_status __os_event_mutex_is_triggered(struct os_process *proc,
+		os_ptr_t args);
+
+/* Public API *****************************************************************/
 
 /*! \name Mutex
  *
@@ -54,8 +69,10 @@ static inline void os_mutex_create(struct os_mutex *mutex) {
  */
 static inline void os_mutex_create_event(struct os_event *event,
 		struct os_mutex *mutex) {
-	extern const struct os_event_descriptor mutex_event_descriptor;
-	os_event_create(event, &mutex_event_descriptor, (os_ptr_t) mutex);
+	const struct os_event_descriptor mutex_event_descriptor = {
+		.is_triggered = __os_event_mutex_is_triggered
+	};
+	__os_event_create(event, &mutex_event_descriptor, (os_ptr_t) mutex);
 }
 
 /*! \brief Get a mutex out of a \ref os_event structure.
