@@ -22,7 +22,7 @@
  * When a process is sleeping it will be removed from the active process list,
  * therefore the performance will not be decreased.
  *
- * Events are stored in a chain list as follow, where \i E are events and \i P
+ * Events are stored in a chain list as follow, where \b E are events and \b P
  * are processes:
  * \code
  *  E1 -> E2 -> E3 -> NULL
@@ -74,10 +74,10 @@ struct os_event_descriptor {
 	 * - \ref os_queue_sort_lifo
 	 * \note This function is optional. By default the new process will added
 	 * using the \ref os_queue_sort_fifo algorithm or the
-	 * \ref os_queue_process_sort_priority alorithm, depending if priorities
+	 * \ref os_queue_doubly_process_sort_priority alorithm, depending if priorities
 	 * are enabled or not.
 	 */
-	os_queue_bidirectional_sort_t sort;
+	os_queue_doubly_sort_t sort;
 	/*! \brief This function will handle the setup of the event. For
 	 * example, if the event is a timer, the timer will start to run after
 	 * the call of this function.
@@ -96,20 +96,20 @@ struct os_event_descriptor {
 
 /*! \struct os_queue_event
  * \brief Event queue structure definition (see
- * \ref OS_QUEUE_BIDIRECTIONAL_DEFINE for more details). This structure is used
+ * \ref OS_QUEUE_DOUBLY_DEFINE for more details). This structure is used
  * to hold and link a process with an event.
  */
-OS_QUEUE_BIDIRECTIONAL_DEFINE(event,
-	/*! \brief Process associated with the event */
+OS_QUEUE_DOUBLY_DEFINE(event,
+	/*! Process associated with the event */
 	struct os_process *proc;
-	/*! \brief Pointer on a variable to be notified when the evenr triggers
+	/*! Pointer on a variable to be notified when the evenr triggers
 	 */
 	struct os_event **event_triggered;
 	/*! To keep track of the similar process entries created and associated
 	 * with other processes
 	 */
 	struct os_queue_event *relation;
-)
+);
 
 /*! \brief Event structure
  */
@@ -121,7 +121,7 @@ struct os_event {
 	/*! \brief This is the starting point of the process chain list associated
 	 * with this event. The last process is followed by a NULL pointer.
 	 */
-	struct os_queue_bidirectional queue;
+	struct os_queue_doubly queue;
 	/*! \brief Next event in the chain list. Last event is followed by a
 	 * NULL pointer.
 	 */
@@ -146,8 +146,8 @@ struct __os_event_custom_function_args {
  * \ingroup group_os_internal_api
  * \param event A non-initialized event structure to hold the context of this
  * event
- * \param type The event description structure which defines the type of event
- * to be used.
+ * \param descriptor The event description structure which defines the type of
+ * event to be used.
  * \param args Argument which will be passed to the event descriptor functions.
  */
 void __os_event_create(struct os_event *event,
@@ -215,8 +215,8 @@ void __os_event_register(struct os_event *event, struct os_queue_event *queue_el
 /*! \brief Get the \ref os_queue_event pointer associated with an event
  * \ingroup group_os_internal_api
  * \param event The event from which we want to get the structure
- * \return The \ref os_queue_pointer, or NULL if no processes are associated
- * with this event
+ * \return The \ref os_queue_event pointer, or NULL if no processes are
+ * associated with this event
  */
 static inline struct os_queue_event *__os_event_get_queue(struct os_event *event) {
 	return (struct os_queue_event *) event->queue.next;

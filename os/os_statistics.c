@@ -14,93 +14,107 @@
 
 #include "os_core.h"
 
-#if CONFIG_OS_USE_STATISTICS == true
-
 #if CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH == true
 
-/*!
- * Task switching time
- * \{
+/*! \brief Temporary variable to compute the task activity time.
  */
+static os_cy_t task_cy = 0;
+/*! \brief Temporary variable holding the number of cycles for the last task
+ * switch.
+ */
+static os_cy_t task_switch_cy;
+/* \brief Minimal number of cycle of a task switch.
+ */
+static os_cy_t task_switch_min_cy = (os_cy_t) -1;
+/* \brief Maximal number of cycle of a task switch.
+ */
+static os_cy_t task_switch_max_cy = 0;
 
-/*! To compute the number of cycles that a task takes uses
+/*! \brief Start monitoring the task switch time.
+ * \param current_cy Current number of cycles
  */
-os_cy_t task_cy = 0;
-/*! Last context task switching number of cycles
- */
-os_cy_t task_switch_cy;
-os_cy_t task_switch_min_cy = (uint32_t) -1;
-os_cy_t task_switch_max_cy = 0;
-
 static inline void measure_context_task_switch_time_start(os_cy_t current_cy) {
 	task_switch_cy = current_cy;
 }
+
+/*! \brief Stop monitoring the task switch time.
+ * \param current_cy Current number of cycles
+ */
 static inline void measure_context_task_switch_time_stop(os_cy_t current_cy) {
 	task_switch_cy = current_cy - task_switch_cy;
+	/* Update the minimal switch time */
 	if (task_switch_cy < task_switch_min_cy) {
 		task_switch_min_cy = task_switch_cy;
 	}
+	/* Update the maximal switch time */
 	if (task_switch_cy > task_switch_max_cy) {
 		task_switch_max_cy = task_switch_cy;
 	}
 }
 
+/*! \brief Start monitoring the task activity time.
+ * \param current_cy Current number of cycles
+ */
 static inline void update_task_cycle_counter_start(os_cy_t current_cy) {
 	struct os_process *current_process = __os_process_get_current();
 	current_process->cycle_counter += current_cy - task_cy;
 }
+
+/*! \brief Stop monitoring the task activity time.
+ * \param current_cy Current number of cycles
+ */
 static inline void update_task_cycle_counter_stop(os_cy_t current_cy) {
 	task_cy = current_cy;
 }
 
 void __os_statistics_switch_context_tick_handler_start(os_cy_t offset_cy)
 {
+	/* Get the current cycle count */
 	os_cy_t current_cy = os_read_cycle_counter() - offset_cy;
+	/* Start monitoring the task switch and task activity time */
 	measure_context_task_switch_time_start(current_cy);
 	update_task_cycle_counter_start(current_cy);
 }
 void __os_statistics_switch_context_tick_handler_stop(os_cy_t offset_cy)
 {
+	/* Get the current cycle count */
 	os_cy_t current_cy = os_read_cycle_counter() + offset_cy;
+	/* Stop monitoring the task switch and task activity time */
 	measure_context_task_switch_time_stop(current_cy);
 	update_task_cycle_counter_stop(current_cy);
 }
 
 void __os_statistics_switch_context_start(os_cy_t offset_cy)
 {
+	/* Get the current cycle count */
 	os_cy_t current_cy = os_read_cycle_counter() - offset_cy;
+	/* Start monitoring the task activity time */
 	update_task_cycle_counter_start(current_cy);
 }
 void __os_statistics_switch_context_stop(os_cy_t offset_cy)
 {
+	/* Get the current cycle count */
 	os_cy_t current_cy = os_read_cycle_counter() + offset_cy;
+	/* Stop monitoring the task activity time */
 	update_task_cycle_counter_stop(current_cy);
 }
 
-/*! \copybrief os_statistics_get_task_switch_time_jitter
- */
 os_cy_t os_statistics_get_task_switch_time_jitter(void)
-{
+{	
+	/* Switch time jitter is the difference between the maximum and
+	 * the minimum / 2
+	 */
 	return (task_switch_max_cy - task_switch_min_cy) / 2;
 }
 
-/*! \copybrief os_statistics_get_task_switch_time
- */
 os_cy_t os_statistics_get_task_switch_time(void)
 {
+	/* The switch time is the average between the maximum and minimum */
 	return (task_switch_max_cy + task_switch_min_cy) / 2;
 }
 
-/*!
- * \}
- */
-
 #endif // CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH == true
 
-/*!
- * The ratio of the CPU ressources is calculated as follow:
- * \code ratio = (100 / (priority level)) / SUM(100 / (each priority level)) \endcode
- */
 uint8_t os_statistics_task_cpu_allocation(struct os_task *task)
 {
 	struct os_process *proc = __os_task_get_process(task);
@@ -112,7 +126,7 @@ uint8_t os_statistics_task_cpu_allocation(struct os_task *task)
 #endif
 	uint16_t sum = priority;
 
-	// Loop into the task list
+	/* Loop into the task list */
 	while (last_proc != proc) {
 		if (__os_process_is_task(last_proc)) {
 #if CONFIG_OS_USE_PRIORITY == true
@@ -126,5 +140,3 @@ uint8_t os_statistics_task_cpu_allocation(struct os_task *task)
 
 	return (uint8_t) (((uint16_t) priority * 100) / sum);
 }
-
-#endif // CONFIG_OS_USE_STATISTICS == true

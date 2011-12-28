@@ -74,6 +74,14 @@ static inline bool os_is_critical(void) {
 	return !cpu_irq_is_enabled();
 }
 
+/* Declaration of the interrupt handler function
+ */
+#if __GNUC__
+__attribute__((__interrupt__)) static void os_switch_context_int_handler(void);
+#elif __ICCAVR32__
+__interrupt static void os_switch_context_int_handler(void);
+#endif
+
 #define os_switch_context(bypass_context_saving) \
 	do { \
 		__asm__ __volatile__ ( \

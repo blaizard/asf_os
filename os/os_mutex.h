@@ -77,7 +77,7 @@ static inline void os_mutex_create_event(struct os_event *event,
 
 /*! \brief Get a mutex out of a \ref os_event structure.
  * \ingroup group_os_public_api
- * \param The mutex event
+ * \param event The mutex event
  * \return The \ref os_mutex structure
  * \pre The event must have been generate from \ref os_mutex_create_event
  */

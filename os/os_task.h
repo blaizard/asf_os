@@ -1,6 +1,42 @@
 #ifndef __OS_TASK_H__
 #define __OS_TASK_H__
 
+/* Configuration options ******************************************************/
+
+/*! \def CONFIG_OS_TASK_DEFAULT_PRIORITY
+ * \brief Default priority assgined to a task
+ * \ingroup group_os_config
+ */
+#ifndef CONFIG_OS_TASK_DEFAULT_PRIORITY
+	#define CONFIG_OS_TASK_DEFAULT_PRIORITY OS_PRIORITY_1
+#endif
+
+/* Macros *********************************************************************/
+
+/*! \brief Allocate memory for the stack
+ *
+ * This macro can be used with \ref OS_TASK_USE_CUSTOM_STACK in order to
+ * manually allocate some memory for the stack.
+ * Here is an example code to use this macro:
+ * \code
+ * void my_func(os_ptr_t args)
+ * {
+ *	...
+ * }
+ * static OS_MALLOC_STACK(my_stack, 1024);
+ * struct os_task my_task;
+ * my_task.stack = my_stack;
+ * os_task_create(&my_task, my_func, NULL, 0, OS_TASK_USE_CUSTOM_STACK);
+ * \endcode
+ * \ingroup group_os_public_api
+ * \param stack_symbol The symbol name used to refer to this stack
+ * \param stack_size The size of the stack in bytes
+ */
+#define OS_MALLOC_STACK(stack_symbol, stack_size) \
+		uint8_t (stack_symbol)[(stack_size)]
+
+/* Types **********************************************************************/
+
 enum os_task_option {
 	/*! \brief Default options
 	 */
@@ -29,6 +65,28 @@ struct os_task {
 	 */
 	enum os_task_option options;
 };
+
+/* Internal API ***************************************************************/
+
+/*! \brief Get the task associated with a process
+ * \ingroup group_os_internal_api
+ * \param proc the process
+ * \return The task pointer
+ */
+static inline struct os_task *__os_task_from_process(struct os_process *proc) {
+	return OS_CONTAINER_OF(proc, struct os_task, core);
+}
+
+/*! \brief Get the task process
+ * \ingroup group_os_internal_api
+ * \param task The task
+ * \return The process of the task
+ */
+static inline struct os_process *__os_task_get_process(struct os_task *task) {
+	return &task->core;
+}
+
+/* Public API *****************************************************************/
 
 /*! \name Tasks
  *
@@ -63,24 +121,6 @@ bool os_task_create(struct os_task *task, os_proc_ptr_t task_ptr, os_ptr_t args,
  */
 void os_task_delay(os_tick_t tick_nb);
 #endif
-
-/*! \brief Get the task associated with a process
- * \ingroup group_os_public_api
- * \param proc the process
- * \return The task pointer
- */
-static inline struct os_task *__os_task_from_process(struct os_process *proc) {
-	return OS_CONTAINER_OF(proc, struct os_task, core);
-}
-
-/*! \brief Get the task process
- * \ingroup group_os_public_api
- * \param task The task
- * \return The process of the task
- */
-static inline struct os_process *__os_task_get_process(struct os_task *task) {
-	return &task->core;
-}
 
 #if CONFIG_OS_USE_PRIORITY == true
 /*! \brief Set a priority to a task
@@ -150,9 +190,15 @@ static inline bool os_task_is_enabled(struct os_task *task) {
  * \ingroup group_os_public_api
  * \return the current task. NULL if none is running.
  */
-struct os_task *os_task_get_current(void);
+static inline struct os_task *os_task_get_current(void) {
+	if (__os_process_is_task(__os_process_get_current())) {
+		return __os_task_from_process(__os_process_get_current());
+	}
+	return NULL;
+}
 
 #if CONFIG_OS_USE_EVENTS == true
+
 /*! \brief Send the task to sleep and wake it up uppon a specific event
  * \ingroup group_os_public_api
  * \param ... List of events (\ref os_event) used to wakeup the task
@@ -165,6 +211,7 @@ struct os_task *os_task_get_current(void);
 				__queue_elt, OS_NB_ARGS(__VA_ARGS__), \
 				__VA_ARGS__); \
 		} while (false);
+
 /*! \brief Send the task to sleep and wake it up uppon a specific event
  * \ingroup group_os_public_api
  * \param event_triggered An empty \ref os_event pointer which will point on
@@ -180,6 +227,7 @@ struct os_task *os_task_get_current(void);
 				__queue_elt, OS_NB_ARGS(__VA_ARGS__), \
 				__VA_ARGS__); \
 		} while (false);
+
 #endif
 
 /*!

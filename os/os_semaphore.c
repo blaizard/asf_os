@@ -14,29 +14,12 @@
 
 #include "os_core.h"
 
-/*! \name Private functions
- * \{
- */
-static enum os_event_status os_event_sempahore_is_triggered(struct os_process *proc,
-		os_ptr_t args);
-/*!
- * \}
- */
-
-const struct os_event_descriptor semaphore_event_descriptor = {
-	.is_triggered = os_event_sempahore_is_triggered
-};
-
-/*!
- * \brief Take the semphore, use by the event.
- * \param event The semaphore event
- * \return OS_EVENT_NONE if no ressource is available. OS_EVENT_OK_STOP if
- * only 1 is available, OS_EVENT_OK_CONTINUE if more than one.
- */
-static enum os_event_status os_event_sempahore_is_triggered(struct os_process *proc,
+enum os_event_status __os_event_sempahore_is_triggered(struct os_process *proc,
 		os_ptr_t args)
 {
+	/* Initial status set to "no event" */
 	enum os_event_status status = OS_EVENT_NONE;
+	/* Cast the arguments into a os_semaphore structure */
 	struct os_semaphore *sem = (struct os_semaphore *) args;
 	/* Save the critical region status */
 	bool is_critical = os_is_critical();
@@ -45,14 +28,23 @@ static enum os_event_status os_event_sempahore_is_triggered(struct os_process *p
 	if (!is_critical) {
 		os_enter_critical();
 	}
+	/* If there is only 1 semaphore left */
 	if (sem->counter == 1) {
+		/* Take it */
 		sem->counter = 0;
+		/* It is the last semaphore so no further check is necessary */
 		status = OS_EVENT_OK_STOP;
 	}
+	/* If there is more than 1 semaphore available */
 	else if (sem->counter > 1) {
+		/* Take it */
 		sem->counter--;
+		/* Another process can be triggered with this sempahore, so
+		 * set the status as "continue"
+		 */
 		status = OS_EVENT_OK_CONTINUE;
 	}
+	/* Leave the critical region */
 	if (!is_critical) {
 		os_leave_critical();
 	}

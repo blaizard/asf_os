@@ -101,13 +101,13 @@ static void __os_event_register(struct os_event *event,
 		struct os_queue_event *queue_elt, struct os_process *proc,
 		struct os_event **event_triggered)
 {
-	os_queue_bidirectional_sort_t sort_fct;
+	os_queue_doubly_sort_t sort_fct;
 
 	/* Get the appropriate sorting function */
 #if CONFIG_OS_USE_PRIORITY == true
-	sort_fct = os_queue_bidirectional_process_sort_priority;
+	sort_fct = os_queue_doubly_process_sort_priority;
 #else
-	sort_fct = (os_queue_bidirectional_sort_t) os_queue_sort_fifo;
+	sort_fct = (os_queue_doubly_sort_t) os_queue_sort_fifo;
 #endif
 	/* If a custom sorting function is defined for this event, use it */
 	if (event->desc.sort) {

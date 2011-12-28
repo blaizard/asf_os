@@ -24,14 +24,6 @@
 			*((uint32_t *) (proc)->sp) = (uint32_t) (value); \
 		} while (false)
 
-/* Declaration of the interrupt handler function
- */
-#if __GNUC__
-__attribute__((__interrupt__)) static void os_switch_context_int_handler(void);
-#elif __ICCAVR32__
-__interrupt static void os_switch_context_int_handler(void);
-#endif
-
 #if CONFIG_OS_SCHEDULER_TYPE == CONFIG_OS_SCHEDULER_USE_COMPARE
 	/* Setup functions to use the compare interrupt
 	 */
@@ -163,7 +155,7 @@ ISR(os_switch_context_int_handler, OS_SCHEDULER_IRQ_GROUP,
 		"st.w r1[0], sp\n\t"
 	);
 
-	HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_START(20);
+	__HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_START(20);
 
 	// Clear the interrupt flag
 	os_scheduler_clear_int();
@@ -174,7 +166,7 @@ ISR(os_switch_context_int_handler, OS_SCHEDULER_IRQ_GROUP,
 		"ld.w sp, r12\n\t"
 	);
 
-	HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_STOP(18);
+	__HOOK_OS_STATISTICS_SWITCH_CONTEXT_TICK_HANDLER_STOP(18);
 
 	__asm__ __volatile__ (
 		// Restore context
@@ -229,7 +221,7 @@ __exception void _os_switch_context(void)
 		"bypass_context_save:"
 	);
 
-	HOOK_OS_STATISTICS_SWITCH_CONTEXT_START(34);
+	__HOOK_OS_STATISTICS_SWITCH_CONTEXT_START(34);
 
 	__os_switch_context_hook();
 
@@ -238,7 +230,7 @@ __exception void _os_switch_context(void)
 		"ld.w sp, r12\n\t"
 	);
 
-	HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP(32);
+	__HOOK_OS_STATISTICS_SWITCH_CONTEXT_STOP(32);
 
 	__asm__ __volatile__ (
 		// Restore context

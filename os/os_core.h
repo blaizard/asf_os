@@ -237,22 +237,6 @@
 	#define CONFIG_OS_USE_CUSTOM_MALLOC false
 #endif
 
-/*! \def CONFIG_OS_TASK_DEFAULT_PRIORITY
- * \brief Default priority assgined to a task
- * \ingroup group_os_config
- */
-#ifndef CONFIG_OS_TASK_DEFAULT_PRIORITY
-	#define CONFIG_OS_TASK_DEFAULT_PRIORITY OS_PRIORITY_1
-#endif
-
-/*! \def CONFIG_OS_USE_STATISTICS
- * \brief Defines if statistics should be enabled
- * \ingroup group_os_config
- */
-#ifndef CONFIG_OS_USE_STATISTICS
-	#define CONFIG_OS_USE_STATISTICS false
-#endif
-
 /*! \def CONFIG_OS_PROCESS_ENABLE_FIFO
  * \brief Setting this define to true will bring enabled process at the end of
  * the active process list. The last process enabled will be the last called by
@@ -268,18 +252,6 @@
  */
 #ifndef CONFIG_OS_PROCESS_ENABLE_FIFO
 	#define CONFIG_OS_PROCESS_ENABLE_FIFO false
-#endif
-
-/*! \def CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH
- * \brief Give statistics about the task switching.
- * This enables the following functions:
- * - \ref os_statistics_get_task_switch_time
- * - \ref os_statistics_get_task_switch_time_jitter
- * \ingroup group_os_config
- * \pre \ref CONFIG_OS_USE_STATISTICS must be set
- */
-#ifndef CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH
-	#define CONFIG_OS_STATISTICS_MONITOR_TASK_SWITCH false
 #endif
 
 /*!
@@ -354,28 +326,6 @@
  */
 #define OS_NB_ARGS(...) \
 		(sizeof((os_ptr_t []) {__VA_ARGS__}) / sizeof(os_ptr_t))
-
-/*! \brief Allocate memory for the stack
- *
- * This macro can be used with \ref OS_TASK_USE_CUSTOM_STACK in order to
- * manually allocate some memory for the stack.
- * Here is an example code to use this macro:
- * \code
- * void my_func(os_ptr_t args)
- * {
- *	...
- * }
- * static OS_MALLOC_STACK(my_stack, 1024);
- * struct os_task my_task;
- * my_task.stack = my_stack;
- * os_task_create(&my_task, my_func, NULL, 0, OS_TASK_USE_CUSTOM_STACK);
- * \endcode
- * \ingroup group_os_public_api
- * \param stack_symbol The symbol name used to refer to this stack
- * \param stack_size The size of the stack in bytes
- */
-#define OS_MALLOC_STACK(stack_symbol, stack_size) \
-		uint8_t (stack_symbol)[(stack_size)]
 
 /*! \brief Convert a delay in milliseconds to a number of ticks.
  * \ingroup group_os_public_api
