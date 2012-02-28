@@ -213,7 +213,7 @@ void __os_event_scheduler(void)
 				 * of the event list. This should never happen.
 				 */
 				else {
-					//while (true);
+					// while (true);
 					/* Remove the not pending process from
 					 * the list.
 					 */
@@ -224,19 +224,28 @@ void __os_event_scheduler(void)
 					status = OS_EVENT_OK_CONTINUE;
 				}
 			}
-			/* If the process queue of the current event is empty,
-			 * remove this event from the active event list.
-			 */
-			if (__os_event_is_empty(event)) {
-				/* Change the status to exit the main loop */
-				status = OS_EVENT_NONE;
-				/* Remove this event from the active event list
-				 */
-				__os_event_pop(event);
-			}
+
 		/* Loop until the status is set to "continue" */
 		} while (status == OS_EVENT_OK_CONTINUE);
 		/* Get the next active event */
+		event = event->next;
+	}
+
+	/* Start with the first event to process */
+	event = __os_current_event;
+	/* Garbage collector, test if there are empty events, if so remove them
+	 */
+	while (event) {
+		/* If the process queue of the current event is empty,
+		 * remove this event from the active event list.
+		 */
+		if (__os_event_is_empty(event)) {
+			/* Change the status to exit the main loop */
+			status = OS_EVENT_NONE;
+			/* Remove this event from the active event list
+			 */
+			__os_event_pop(event);
+		}
 		event = event->next;
 	}
 
