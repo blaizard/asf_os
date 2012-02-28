@@ -209,11 +209,11 @@ void __os_event_scheduler(void)
 						}
 					}
 				}
-				/* If the process is pending, pop this process out
+				/* If a process is not pending, pop this process out
 				 * of the event list. This should never happen.
 				 */
 				else {
-					while (true);
+					//while (true);
 					/* Remove the not pending process from
 					 * the list.
 					 */

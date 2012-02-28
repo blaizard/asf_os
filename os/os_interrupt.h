@@ -15,6 +15,14 @@
 #ifndef __OS_INTERRUPT_H__
 #define __OS_INTERRUPT_H__
 
+/*! \addtogroup group_os
+ * \section section_os_process_interrupt Software Interrupt
+ *
+ * A software interrupt (\ref os_interrupt) is a process which will not be
+ * interrupted by the process scheduler. An interrupt uses the same stack as the
+ * application process.
+ */
+
 /* Configuration options ******************************************************/
 
 /*! \def CONFIG_OS_USE_SW_INTERRUPTS

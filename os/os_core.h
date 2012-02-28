@@ -30,34 +30,28 @@
  *   - Advanced event system with priority
  *   - Semaphores with priority inheritance
  * - Targets:
- *   - MISRA-C compatible
+ *   - MISRA-C 2004 (MISRA-C 2) compatible
  *
- * \section section_os_core OS Core
+ * \section section_os_process Process
  *
- * \subsection section_os_process Process
- *
- * Tasks (\ref os_task) and software interrupts (os_interrupt) are
- * sub-categories of processses (\ref os_process). Therefore they will inherit
- * from all processes features.
- *
- * A \b process (\ref os_process) is a instance of a piece of code with its own
+ * A process (\ref os_process) is an instance of a piece of code with its own
  * context. A process can have a priority execution amongst other processes.
  * It can be enabled and be part of the active process list or disabled and
- * be completely removed from the process scheduler.
+ * be completely removed from the \ref section_os_scheduler.
  *
- * \subsubsection section_os_process_task Task
+ * A process is a private entity and must not be used as is.
  *
- * A \b task (\ref os_task) is a process which can be interrupted by the process
- * scheduler at any time. Therefore its execution time is not predictable
- * without a complete view of the active process list.
+ * \ref section_os_process_task and \ref section_os_process_interrupt are
+ * sub-categories of processses. Therefore they will inherit from all processes
+ * features. These entities are public entities and should be used by the user.
  *
- * \subsubsection section_os_process_interrupt Software Interrupt
+ * \section section_os_application Application Process
  *
- * A \b software \b interrupt (\ref os_interrupt) is a process which will not be
- * interrupted by the process scheduler. An interrupt uses the same stack as the
- * application process.
+ * The application process contains the initial context. During the execution
+ * of the operating system, it is used only when no other processes are
+ * running and can be controlled with \ref HOOK_OS_IDLE.
  *
- * \subsection section_os_scheduler Scheduler
+ * \section section_os_scheduler Process Scheduler
  *
  * All the actives processes are stored in a circular chain list. The operating
  * system does not keep track of the non-active processes. This to keep the
@@ -87,12 +81,28 @@
  * every X iteration. An iteration represents a complete cycle of the circular
  * active process list.
  * For example, if there are only 2 processes in the active process list;
- * Let's say process #1 has a priority level of 1 and process #2 has a priority
+  Let's say process #1 has a priority level of 1 and process #2 has a priority
  * level of 2, then process #1 will have 66% of CPU while process #2, 33%.
  * The active process list can be seen as follow:
  * \code (process 1) -> (process 1) -> (process 2) -> (process 1) -> (process 1)
  * -> (process 2) -> ... \endcode
  *
+ * \section section_os_usage Usage
+ *
+ * The operating system will be operational after the call of \ref os_start.
+ * This function needs a frequency which is passed as an argument. This
+ * frequency is used as a reference to generate the tick interrupt at
+ * \ref CONFIG_OS_TICK_HZ.
+ *
+ * To calculate how much ressources are needed, you need to understand what your
+ * application really needs. The size of the application stack also needs to be
+ * carefully chosen. The application stack is used by different modules in the
+ * operating system:
+ * - \ref section_os_process_interrupt will runs within the application context.
+ * - The \ref section_os_event scheduler will run within the application
+ * context.
+ * - Everything you put in \ref HOOK_OS_IDLE will also run within the
+ * application context.
  */
 
 /*! \defgroup group_os_public_api Public API

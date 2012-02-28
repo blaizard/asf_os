@@ -1,10 +1,15 @@
 Competitors:
 - Micrium uc/OS
 - FreeRTOS
+        bit bigger, far better documented and runs on several platforms besides AVR
 - eCos
 - vxWorks
 - AVIX-RT (http://www.avix-rt.com)
-
+- Salvo (http://www.pumpkininc.com/)
+- AvrX
+         fairly small and fast, but suffers from poor documentation.
+- csRTOS (http://www.circuitcellar.com/avr2004/DA3650.html )
+- 4AvrOS (http://www.mtcnet.net/~henryvm/4AvrOS/)
 
 RTOS survey:
 

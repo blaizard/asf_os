@@ -425,6 +425,7 @@ static inline void os_queue_doubly_insert_first(
 		struct os_queue_doubly **first_elt,
 		struct os_queue_doubly *elt) {
 	elt->next = *first_elt;
+	elt->prev = NULL;
 	(*first_elt)->prev = elt;
 	*first_elt = elt;
 }

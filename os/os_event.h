@@ -22,15 +22,28 @@
  * When a process is sleeping it will be removed from the active process list,
  * therefore the performance will not be decreased.
  *
+ * An event can wake up one or multiple process. A process can be waken up by
+ * one or multiple events as well. If priorities are enabled, the first process
+ * waken up by an event will be the one with the highest priority.
+ *
  * Events are stored in a chain list as follow, where \b E are events and \b P
  * are processes:
  * \code
- *  E1 -> E2 -> E3 -> NULL
- *  P1    P6    P3
- * NULL   P7   NULL
- *       NULL
+ *  (E1) -> (E2) -> (E3)
+ *   |       |       |
+ *  (P1)    (P6)    (P3)
+ *           |
+ *          (P7)
  * \endcode
- * When an event has no process, it is removed from the active event list.
+ *
+ * When an event has no associated process, it is considered as inactive and is
+ * removed from the active event list.
+ *
+ * The event scheduler runs with the application process. They share the same
+ * context and therefore the same stack. You can change the priority of the
+ * event process (in other word, you can change the priority of the event
+ * scheduler). This will not affect the priority of the application process
+ * since this process is active only when no other processes are actives.
  */
 
 /* Configuration options ******************************************************/
@@ -102,7 +115,7 @@ struct os_event_descriptor {
 OS_QUEUE_DOUBLY_DEFINE(event,
 	/*! Process associated with the event */
 	struct os_process *proc;
-	/*! Pointer on a variable to be notified when the evenr triggers
+	/*! Pointer on a variable to be notified when the event triggers
 	 */
 	struct os_event **event_triggered;
 	/*! To keep track of the similar process entries created and associated
@@ -188,7 +201,8 @@ static inline bool __os_event_is_enabled(struct os_event *event) {
 	return (bool) (event->queue.next);
 }
 
-/*! \brief Generic function to send a processus to sleep
+/*! \brief Generic function to send a processus to sleep. The process can be
+ * waken up by one or more events passed in parameter.
  * \ingroup group_os_internal_api
  * \param proc The processus to send to sleep
  * \param queue_elt The empty \ref os_queue_event structure to hold each
