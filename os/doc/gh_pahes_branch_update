@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# This script will generate the doxygen documentation of eeOS
+# It will then commit thisdocumentation inside the gh-pages branch
+# in order to be visible in the github repository at the following
+# address: http://blaizard.github.com/asf_os/
+
+current_pwd=`pwd`
+
+echo -n "This script will remove all the un-commited files, do you want to continue? [Y/n] "
+read answer
+if [ "${answer}" == "n" ]; then
+	exit
+fi
+
+echo -n "Generating documentation..."
+doxygen doxyfile.doxygen > /dev/null
+echo -e "\tdone"
+
+echo -n "Copying the documentation outisde of the repository..."
+mv ./html "${TEMP}/tmp_doc"
+echo -e "\tdone"
+
+echo -n "Checking out the gh-pages branch..."
+git checkout gh-pages > /dev/null 2> /dev/null
+echo -e "\tdone"
+
+echo -n "Remove the current documentation..."
+cd ../..
+git rm -r . > /dev/null 2> /dev/null
+echo -e "\tdone"
+
+echo -n "Add the new documentation..."
+mv ${TEMP}/tmp_doc/* ./
+rm -rf "${TEMP}/tmp_doc"
+echo -e "\tdone"
+
+echo -n "git add..."
+git add . > /dev/null 2> /dev/null
+git rm --cached -rf examples/ os/ > /dev/null 2> /dev/null
+git rm --cached -f os/doc/$0 > /dev/null 2> /dev/null
+echo -e "\tdone"
+
+echo -n "git commit..."
+git commit -m "Documentation update" > /dev/null 2> /dev/null
+echo -e "\tdone"
+
+echo -n "Cleanup..."
+git checkout master > /dev/null 2> /dev/null
+cd "${current_pwd}"
+echo -e "\tdone"
