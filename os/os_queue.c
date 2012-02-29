@@ -40,8 +40,8 @@ bool os_queue_doubly_process_sort_priority(struct os_queue_doubly *a,
 		struct os_queue_doubly *b)
 {
 	/* Get the process associated with the queue element */
-	struct os_process *proc1 = os_queue_doubly_process_from_queue(a)->proc;
-	struct os_process *proc2 = os_queue_doubly_process_from_queue(b)->proc;
+	struct os_process *proc1 = os_queue_doubly_process_from_queue_doubly(a)->proc;
+	struct os_process *proc2 = os_queue_doubly_process_from_queue_doubly(b)->proc;
 	/* The first element is the one with the highest priority */
 	return (proc1->priority <= proc2->priority);
 }

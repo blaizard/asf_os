@@ -27,6 +27,8 @@ static struct os_trace *os_debug_trace_start;
  */
 static struct os_trace *os_debug_trace_end;
 
+#warning TODO - fis the trace log function
+#if 0
 void __os_debug_trace_log(enum os_debug_trace_event event, os_ptr_t data)
 {
 	/* The following code is only activated if the trace is enabled */
@@ -76,3 +78,5 @@ void os_debug_start_trace(os_ptr_t buffer, int size)
 	/* Activate the trace */
 	os_debug_trace_flag = true;
 }
+
+#endif

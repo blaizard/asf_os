@@ -3,12 +3,12 @@
 		<!-- Configuration //-->
 		<build type="include-path" value="."/>
 		<build type="header-file" value="conf_clock.h"/>
-                <build type="header-file" value="conf_board.h"/>
-                <build type="header-file" value="conf_example.h"/>
+		<build type="header-file" value="conf_board.h"/>
+		<build type="header-file" value="conf_example.h"/>
 
 		<require idref="common.applications.os.examples.task_switch"/>
 		<require idref="board.evk1105"/>
-                <config name="config.avr32.drivers.intc.exception" value="no"/>
+		<config name="config.avr32.drivers.intc.exception" value="no"/>
 		<generator value="iarew32"/>
 		<generator value="avr32gcc" />
 		<generator value="as5_32" />
@@ -19,12 +19,12 @@
 		<!-- Configuration //-->
 		<build type="include-path" value="."/>
 		<build type="header-file" value="conf_clock.h"/>
-                <build type="header-file" value="conf_board.h"/>
-                <build type="header-file" value="conf_example.h"/>
+		<build type="header-file" value="conf_board.h"/>
+		<build type="header-file" value="conf_example.h"/>
 
 		<require idref="common.applications.os.examples.mutex"/>
 		<require idref="board.evk1105"/>
-                <config name="config.avr32.drivers.intc.exception" value="no"/>
+		<config name="config.avr32.drivers.intc.exception" value="no"/>
 		<generator value="iarew32"/>
 		<generator value="avr32gcc" />
 		<generator value="as5_32" />
@@ -35,12 +35,12 @@
 		<!-- Configuration //-->
 		<build type="include-path" value="."/>
 		<build type="header-file" value="conf_clock.h"/>
-                <build type="header-file" value="conf_board.h"/>
-                <build type="header-file" value="conf_example.h"/>
+		<build type="header-file" value="conf_board.h"/>
+		<build type="header-file" value="conf_example.h"/>
 
 		<require idref="common.applications.os.examples.semaphore"/>
 		<require idref="board.evk1105"/>
-                <config name="config.avr32.drivers.intc.exception" value="no"/>
+		<config name="config.avr32.drivers.intc.exception" value="no"/>
 		<generator value="iarew32"/>
 		<generator value="avr32gcc" />
 		<generator value="as5_32" />
@@ -51,12 +51,12 @@
 		<!-- Configuration //-->
 		<build type="include-path" value="."/>
 		<build type="header-file" value="conf_clock.h"/>
-                <build type="header-file" value="conf_board.h"/>
-                <build type="header-file" value="conf_example.h"/>
+		<build type="header-file" value="conf_board.h"/>
+		<build type="header-file" value="conf_example.h"/>
 
 		<require idref="common.applications.os.examples.event"/>
 		<require idref="board.evk1105"/>
-                <config name="config.avr32.drivers.intc.exception" value="no"/>
+		<config name="config.avr32.drivers.intc.exception" value="no"/>
 		<generator value="iarew32"/>
 		<generator value="avr32gcc" />
 		<generator value="as5_32" />
