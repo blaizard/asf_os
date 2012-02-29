@@ -26,15 +26,9 @@
  * one or multiple events as well. If priorities are enabled, the first process
  * waken up by an event will be the one with the highest priority.
  *
- * Events are stored in a chain list as follow, where \b E are events and \b P
- * are processes:
- * \code
- *  (E1) -> (E2) -> (E3)
- *   |       |       |
- *  (P1)    (P6)    (P3)
- *           |
- *          (P7)
- * \endcode
+ * Events are stored in a chain list as follow, and each evetn has a list of
+ * associated processes:
+ * \image html event.png
  *
  * When an event has no associated process, it is considered as inactive and is
  * removed from the active event list.
