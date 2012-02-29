@@ -1,8 +1,0 @@
-digraph G
-{
-  edge [fontname="FreeSans",fontsize="10",labelfontname="FreeSans",labelfontsize="10"];
-  node [fontname="FreeSans",fontsize="10",shape=record];
-  Node1 [label="power_clocks_lib.h",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled" fontcolor="black"];
-  Node1 -> Node2 [dir=back,color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
-  Node2 [label="power_clocks_lib.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$power__clocks__lib_8c.html",tooltip="High-level library abstracting features such as oscillators/pll/dfll configuration, clock configuration, System-sensible parameters configuration, buses clocks configuration, sleep mode, reset."];
-}
